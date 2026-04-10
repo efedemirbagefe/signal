@@ -1,17 +1,26 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { IntegrationsConfig } from "@/lib/types";
 
-const WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
+interface WorkspaceMeta {
+  slack_token?: string;
+  slack_bot_token?: string;
+  slack_monitored_channels?: string[];
+  gmail_token?: string;
+  id?: string;
+}
 
 const defaultConfig: IntegrationsConfig = {
-  zendesk:  { enabled: false, subdomain: "", email: "", api_token: "", last_sync: null },
-  intercom: { enabled: false, access_token: "", last_sync: null },
-  jira:     { enabled: false, domain: "", email: "", api_token: "", project_key: "", last_sync: null },
-  appstore: { enabled: false, app_id_ios: "", app_id_android: "", last_sync: null },
-  github:   { enabled: false, token: "", owner: "", repo: "", last_sync: null },
-  reddit:   { enabled: false, client_id: "", client_secret: "", subreddits: "", last_sync: null },
+  slack:    { enabled: false, max_age_days: 7, keyword_filter: "", last_sync: null },
+  email:    { enabled: false, max_age_days: 7, sender_domains: "", last_sync: null },
+  zendesk:  { enabled: false, subdomain: "", email: "", api_token: "", min_priority: "normal", exclude_closed: true, last_sync: null },
+  intercom: { enabled: false, access_token: "", open_only: true, last_sync: null },
+  jira:     { enabled: false, domain: "", email: "", api_token: "", project_key: "", min_priority: "low", exclude_done: true, issue_types: "", last_sync: null },
+  appstore: { enabled: false, app_id_ios: "", app_id_android: "", max_rating: 3, last_sync: null },
+  github:   { enabled: false, token: "", owner: "", repo: "", min_reactions: 0, labels: "", last_sync: null },
+  reddit:   { enabled: false, client_id: "", client_secret: "", subreddits: "", min_score: 5, min_comments: 0, last_sync: null },
 };
 
 function formatLastSync(ts: string | null): string {
@@ -26,29 +35,52 @@ function formatLastSync(ts: string | null): string {
 }
 
 export default function IntegrationsPage() {
+  const router = useRouter();
   const [config, setConfig] = useState<IntegrationsConfig>(defaultConfig);
+  const [workspace, setWorkspace] = useState<WorkspaceMeta>({});
+  const [channels, setChannels] = useState<string[]>([]);
   const [saving, setSaving] = useState<string | null>(null);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [savedSource, setSavedSource] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<{ source: string; count: number } | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/workspace?id=${WORKSPACE_ID}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.workspace?.integrations_config) {
-          setConfig({ ...defaultConfig, ...d.workspace.integrations_config });
+    (async () => {
+      try {
+        const authRes = await fetch("/api/auth/session");
+        if (!authRes.ok) { router.push("/login?redirect=/settings/integrations"); return; }
+        const wsRes = await fetch("/api/workspace");
+        if (!wsRes.ok) { router.push("/login?redirect=/settings/integrations"); return; }
+        const wd = await wsRes.json();
+        const ws = wd.workspace ?? {};
+        setWorkspace(ws);
+        setChannels(ws.slack_monitored_channels ?? []);
+        if (ws.integrations_config) {
+          setConfig((prev) => ({ ...prev, ...ws.integrations_config }));
         }
-      });
-  }, []);
+        setAuthChecked(true);
+      } catch {
+        router.push("/login?redirect=/settings/integrations");
+      }
+    })();
+  }, [router]);
 
   const saveIntegration = async (source: keyof IntegrationsConfig) => {
     setSaving(source);
-    await fetch("/api/workspace", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workspaceId: WORKSPACE_ID, updates: { integrations_config: config } }),
-    });
+    if (source === "slack") {
+      await fetch("/api/workspace", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates: { slack_monitored_channels: channels, integrations_config: config } }),
+      });
+    } else {
+      await fetch("/api/workspace", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates: { integrations_config: config } }),
+      });
+    }
     setSaving(null);
     setSavedSource(source);
     setTimeout(() => setSavedSource(null), 2000);
@@ -61,12 +93,11 @@ export default function IntegrationsPage() {
       const res = await fetch(`/api/ingest/${source}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workspaceId: WORKSPACE_ID }),
+        body: "{}",
       });
       const data = await res.json();
       setSyncResult({ source, count: data.ingested ?? 0 });
-      // Refresh to get updated last_sync
-      const ws = await fetch(`/api/workspace?id=${WORKSPACE_ID}`).then((r) => r.json());
+      const ws = await fetch("/api/workspace").then((r) => r.json());
       if (ws.workspace?.integrations_config) {
         setConfig((prev) => ({ ...prev, ...ws.workspace.integrations_config }));
       }
@@ -81,13 +112,25 @@ export default function IntegrationsPage() {
   const updateField = <K extends keyof IntegrationsConfig>(
     source: K,
     field: string,
-    value: string | boolean
+    value: string | boolean | number
   ) => {
     setConfig((prev) => ({
       ...prev,
       [source]: { ...prev[source], [field]: value },
     }));
   };
+
+  if (!authChecked) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#0b0c10", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 40, height: 40, border: "3px solid rgba(70,230,166,0.2)", borderTopColor: "var(--accent-green)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  const slackConnected = !!workspace.slack_token;
+  const emailConnected = !!workspace.gmail_token;
 
   return (
     <div style={{ minHeight: "100vh", background: "#0b0c10" }}>
@@ -102,7 +145,7 @@ export default function IntegrationsPage() {
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", gap: 16, height: 60 }}>
           <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
             <div className="brand-dot" style={{ width: 22, height: 22 }} />
-            <span style={{ color: "white", fontWeight: 700, fontSize: "0.9rem" }}>Observer AI</span>
+            <span style={{ color: "white", fontWeight: 700, fontSize: "0.9rem" }}>Signal</span>
           </Link>
           <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.1)" }} />
           <span style={{ color: "white", fontWeight: 600, fontSize: "0.9rem" }}>Integrations</span>
@@ -116,7 +159,7 @@ export default function IntegrationsPage() {
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ color: "white", fontWeight: 800, fontSize: "1.75rem", marginBottom: 8 }}>Signal Integrations</h1>
           <p style={{ color: "var(--muted)", lineHeight: 1.6 }}>
-            Connect your product data sources. Observer ingests signals automatically and surfaces intent gaps using Claude AI.
+            Connect your product data sources. Signal ingests signals automatically and surfaces intent gaps using Claude AI.
           </p>
         </div>
 
@@ -129,6 +172,118 @@ export default function IntegrationsPage() {
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+          {/* ── Slack (OAuth source) ── */}
+          <IntegrationCard
+            name="Slack" icon="⚡" color="#e879f9"
+            description="Pull team messages from monitored channels. OAuth-authenticated."
+            enabled={config.slack.enabled}
+            lastSync={config.slack.last_sync}
+            onToggle={(v) => updateField("slack", "enabled", v)}
+            onSave={() => saveIntegration("slack")}
+            onSync={() => syncNow("slack")}
+            saving={saving === "slack"}
+            syncing={syncing === "slack"}
+            saved={savedSource === "slack"}
+            badge={slackConnected ? "OAuth Connected" : undefined}
+          >
+            {!slackConnected ? (
+              <div style={{ marginBottom: 16 }}>
+                <a href={`/api/auth/slack?state=${workspace.id ?? ""}`} className="btn-primary"
+                  style={{ textDecoration: "none", display: "inline-flex" }}>
+                  ⚡ Connect with Slack
+                </a>
+                <p style={hintStyle}>You need to connect Slack via OAuth before enabling ingestion.</p>
+              </div>
+            ) : (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                  <span style={{ color: "var(--accent-green)", fontSize: "0.8rem", fontWeight: 600 }}>✓ Slack workspace connected</span>
+                  <a href={`/api/auth/slack?state=${workspace.id ?? ""}`} style={{ color: "var(--muted)", fontSize: "0.78rem", textDecoration: "none" }}>Re-authenticate →</a>
+                </div>
+                {/* Channels */}
+                <label style={labelStyle}>Channels to monitor</label>
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                  <input className="obs-input" placeholder="general or C0123ABCD" id="slack-ch-input" style={{ flex: 1 }} />
+                  <button className="btn-ghost" style={{ whiteSpace: "nowrap" }}
+                    onClick={() => {
+                      const inp = document.getElementById("slack-ch-input") as HTMLInputElement;
+                      const v = inp?.value.trim();
+                      if (v && !channels.includes(v)) { setChannels([...channels, v]); inp.value = ""; }
+                    }}>Add</button>
+                </div>
+                {channels.length > 0 && (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                    {channels.map((ch) => (
+                      <div key={ch} style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 9999, background: "rgba(70,230,166,0.1)", border: "1px solid rgba(70,230,166,0.25)", fontSize: "0.78rem", color: "var(--accent-green)" }}>
+                        # {ch}
+                        <button onClick={() => setChannels(channels.filter((c) => c !== ch))}
+                          style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={labelStyle}>Days back</label>
+                <input className="obs-input" type="number" min={1} max={90} value={config.slack.max_age_days}
+                  onChange={(e) => updateField("slack", "max_age_days", Number(e.target.value))} />
+                <p style={hintStyle}>Only pull messages from last N days</p>
+              </div>
+              <div>
+                <label style={labelStyle}>Keyword filter <span style={{ textTransform: "none", fontSize: "0.7rem" }}>(optional)</span></label>
+                <input className="obs-input" placeholder="bug, crash, feedback" value={config.slack.keyword_filter}
+                  onChange={(e) => updateField("slack", "keyword_filter", e.target.value)} />
+                <p style={hintStyle}>Comma-separated — empty = all messages</p>
+              </div>
+            </div>
+          </IntegrationCard>
+
+          {/* ── Email / Gmail (OAuth source) ── */}
+          <IntegrationCard
+            name="Email" icon="✉️" color="#6ea8ff"
+            description="Pull inbox emails as signals. Gmail OAuth — reads subject, sender, and body snippet."
+            enabled={config.email.enabled}
+            lastSync={config.email.last_sync}
+            onToggle={(v) => updateField("email", "enabled", v)}
+            onSave={() => saveIntegration("email")}
+            onSync={() => syncNow("email")}
+            saving={saving === "email"}
+            syncing={syncing === "email"}
+            saved={savedSource === "email"}
+            badge={emailConnected ? "OAuth Connected" : undefined}
+          >
+            {!emailConnected ? (
+              <div style={{ marginBottom: 16 }}>
+                <a href={`/api/auth/gmail?state=${workspace.id ?? ""}`} className="btn-primary"
+                  style={{ textDecoration: "none", display: "inline-flex" }}>
+                  ✉️ Connect Gmail
+                </a>
+                <p style={hintStyle}>You need to connect Gmail via OAuth before enabling ingestion.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                <span style={{ color: "var(--accent-green)", fontSize: "0.8rem", fontWeight: 600 }}>✓ Gmail connected</span>
+                <a href={`/api/auth/gmail?state=${workspace.id ?? ""}`} style={{ color: "var(--muted)", fontSize: "0.78rem", textDecoration: "none" }}>Re-authenticate →</a>
+              </div>
+            )}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={labelStyle}>Days back</label>
+                <input className="obs-input" type="number" min={1} max={90} value={config.email.max_age_days}
+                  onChange={(e) => updateField("email", "max_age_days", Number(e.target.value))} />
+                <p style={hintStyle}>Only pull emails from last N days</p>
+              </div>
+              <div>
+                <label style={labelStyle}>Sender domains <span style={{ textTransform: "none", fontSize: "0.7rem" }}>(optional)</span></label>
+                <input className="obs-input" placeholder="acmecorp.com, partner.io" value={config.email.sender_domains}
+                  onChange={(e) => updateField("email", "sender_domains", e.target.value)} />
+                <p style={hintStyle}>Comma-separated — empty = all senders</p>
+              </div>
+            </div>
+          </IntegrationCard>
 
           {/* ── Zendesk ── */}
           <IntegrationCard
@@ -143,7 +298,7 @@ export default function IntegrationsPage() {
             syncing={syncing === "zendesk"}
             saved={savedSource === "zendesk"}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
               <div>
                 <label style={labelStyle}>Subdomain</label>
                 <input className="obs-input" placeholder="yourcompany (without .zendesk.com)" value={config.zendesk.subdomain} onChange={(e) => updateField("zendesk", "subdomain", e.target.value)} />
@@ -156,6 +311,26 @@ export default function IntegrationsPage() {
                 <label style={labelStyle}>API Token</label>
                 <input className="obs-input" type="password" placeholder="Zendesk API token" value={config.zendesk.api_token} onChange={(e) => updateField("zendesk", "api_token", e.target.value)} />
                 <p style={hintStyle}>Admin Center → Apps & Integrations → Zendesk API → API token</p>
+              </div>
+            </div>
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14 }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Signal thresholds</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "start" }}>
+                <div>
+                  <label style={labelStyle}>Min priority</label>
+                  <select className="obs-input" value={config.zendesk.min_priority} onChange={(e) => updateField("zendesk", "min_priority", e.target.value)} style={{ width: "100%" }}>
+                    <option value="low">Low (include all)</option>
+                    <option value="normal">Normal and above</option>
+                    <option value="high">High and above</option>
+                    <option value="urgent">Urgent only</option>
+                  </select>
+                </div>
+                <div style={{ paddingTop: 22 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                    <input type="checkbox" checked={config.zendesk.exclude_closed} onChange={(e) => updateField("zendesk", "exclude_closed", e.target.checked)} style={{ accentColor: "var(--accent-green)" }} />
+                    <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Exclude closed tickets</span>
+                  </label>
+                </div>
               </div>
             </div>
           </IntegrationCard>
@@ -173,10 +348,17 @@ export default function IntegrationsPage() {
             syncing={syncing === "intercom"}
             saved={savedSource === "intercom"}
           >
-            <div>
+            <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>Access Token</label>
               <input className="obs-input" type="password" placeholder="Intercom access token" value={config.intercom.access_token} onChange={(e) => updateField("intercom", "access_token", e.target.value)} />
               <p style={hintStyle}>Settings → Developers → Your app → Authentication → Access Token</p>
+            </div>
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14 }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Signal thresholds</p>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <input type="checkbox" checked={config.intercom.open_only} onChange={(e) => updateField("intercom", "open_only", e.target.checked)} style={{ accentColor: "var(--accent-green)" }} />
+                <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Open conversations only (recommended)</span>
+              </label>
             </div>
           </IntegrationCard>
 
@@ -194,7 +376,7 @@ export default function IntegrationsPage() {
             saved={savedSource === "jira"}
             badge="Powers Execution Reality tab"
           >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
               <div>
                 <label style={labelStyle}>Domain</label>
                 <input className="obs-input" placeholder="yourcompany.atlassian.net" value={config.jira.domain} onChange={(e) => updateField("jira", "domain", e.target.value)} />
@@ -213,6 +395,30 @@ export default function IntegrationsPage() {
               </div>
             </div>
             <p style={hintStyle}>id.atlassian.com → Security → Create and manage API tokens</p>
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14, marginTop: 8 }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Signal thresholds</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 10 }}>
+                <div>
+                  <label style={labelStyle}>Min priority</label>
+                  <select className="obs-input" value={config.jira.min_priority} onChange={(e) => updateField("jira", "min_priority", e.target.value)} style={{ width: "100%" }}>
+                    <option value="lowest">All (Lowest+)</option>
+                    <option value="low">Low and above</option>
+                    <option value="medium">Medium and above</option>
+                    <option value="high">High and above</option>
+                    <option value="highest">Highest only</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={labelStyle}>Issue types <span style={{ textTransform: "none", fontSize: "0.7rem" }}>(optional)</span></label>
+                  <input className="obs-input" placeholder="Bug, Story, Epic" value={config.jira.issue_types} onChange={(e) => updateField("jira", "issue_types", e.target.value)} />
+                  <p style={hintStyle}>Comma-separated — empty = all types</p>
+                </div>
+              </div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <input type="checkbox" checked={config.jira.exclude_done} onChange={(e) => updateField("jira", "exclude_done", e.target.checked)} style={{ accentColor: "var(--accent-green)" }} />
+                <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Exclude Done / Closed / Resolved issues</span>
+              </label>
+            </div>
           </IntegrationCard>
 
           {/* ── App Store ── */}
@@ -228,7 +434,7 @@ export default function IntegrationsPage() {
             syncing={syncing === "appstore"}
             saved={savedSource === "appstore"}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
               <div>
                 <label style={labelStyle}>iOS App ID</label>
                 <input className="obs-input" placeholder="1234567890" value={config.appstore.app_id_ios} onChange={(e) => updateField("appstore", "app_id_ios", e.target.value)} />
@@ -237,6 +443,20 @@ export default function IntegrationsPage() {
               <div>
                 <label style={labelStyle}>Android App ID <span style={{ color: "var(--muted)", fontSize: "0.7rem" }}>(coming soon)</span></label>
                 <input className="obs-input" placeholder="com.yourcompany.app" value={config.appstore.app_id_android} onChange={(e) => updateField("appstore", "app_id_android", e.target.value)} disabled />
+              </div>
+            </div>
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14 }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Signal thresholds</p>
+              <div>
+                <label style={labelStyle}>Max rating to ingest ≤</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <input className="obs-input" type="number" min={1} max={5} value={config.appstore.max_rating}
+                    onChange={(e) => updateField("appstore", "max_rating", Number(e.target.value))} style={{ width: 72 }} />
+                  <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                    {"⭐".repeat(Math.min(5, config.appstore.max_rating || 3))} and below
+                  </span>
+                </div>
+                <p style={hintStyle}>Only ingest reviews with this star rating or fewer. Default 3 surfaces negative and mixed reviews.</p>
               </div>
             </div>
           </IntegrationCard>
@@ -254,7 +474,7 @@ export default function IntegrationsPage() {
             syncing={syncing === "github"}
             saved={savedSource === "github"}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
               <div>
                 <label style={labelStyle}>Owner</label>
                 <input className="obs-input" placeholder="myorg" value={config.github.owner} onChange={(e) => updateField("github", "owner", e.target.value)} />
@@ -269,6 +489,23 @@ export default function IntegrationsPage() {
               </div>
             </div>
             <p style={hintStyle}>Settings → Developer settings → Personal access tokens → Fine-grained (read:issues)</p>
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14, marginTop: 8 }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Signal thresholds</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>Min reactions</label>
+                  <input className="obs-input" type="number" min={0} value={config.github.min_reactions}
+                    onChange={(e) => updateField("github", "min_reactions", Number(e.target.value))} />
+                  <p style={hintStyle}>Only issues with at least this many 👍 reactions</p>
+                </div>
+                <div>
+                  <label style={labelStyle}>Label filter <span style={{ textTransform: "none", fontSize: "0.7rem" }}>(optional)</span></label>
+                  <input className="obs-input" placeholder="bug, enhancement, feedback" value={config.github.labels}
+                    onChange={(e) => updateField("github", "labels", e.target.value)} />
+                  <p style={hintStyle}>Comma-separated — empty = all labels</p>
+                </div>
+              </div>
+            </div>
           </IntegrationCard>
 
           {/* ── Reddit ── */}
@@ -284,7 +521,7 @@ export default function IntegrationsPage() {
             syncing={syncing === "reddit"}
             saved={savedSource === "reddit"}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
               <div>
                 <label style={labelStyle}>Client ID</label>
                 <input className="obs-input" placeholder="Reddit app client ID" value={config.reddit.client_id} onChange={(e) => updateField("reddit", "client_id", e.target.value)} />
@@ -297,6 +534,23 @@ export default function IntegrationsPage() {
                 <label style={labelStyle}>Subreddits to monitor</label>
                 <input className="obs-input" placeholder="r/typescript, r/nextjs, r/yourproduct" value={config.reddit.subreddits} onChange={(e) => updateField("reddit", "subreddits", e.target.value)} />
                 <p style={hintStyle}>reddit.com/prefs/apps → Create App (script type) to get credentials</p>
+              </div>
+            </div>
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14 }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Signal thresholds</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>Min upvotes</label>
+                  <input className="obs-input" type="number" min={0} value={config.reddit.min_score}
+                    onChange={(e) => updateField("reddit", "min_score", Number(e.target.value))} />
+                  <p style={hintStyle}>Filters low-quality / throwaway posts</p>
+                </div>
+                <div>
+                  <label style={labelStyle}>Min comments</label>
+                  <input className="obs-input" type="number" min={0} value={config.reddit.min_comments}
+                    onChange={(e) => updateField("reddit", "min_comments", Number(e.target.value))} />
+                  <p style={hintStyle}>Only posts with engagement</p>
+                </div>
               </div>
             </div>
           </IntegrationCard>
@@ -328,7 +582,7 @@ interface IntegrationCardProps {
 
 function IntegrationCard({ name, icon, color, description, enabled, lastSync, onToggle, onSave, onSync, saving, syncing, saved, badge, children }: IntegrationCardProps) {
   return (
-    <div className="obs-card" style={{ padding: 28, opacity: enabled ? 1 : 0.7, transition: "opacity 0.2s" }}>
+    <div className="obs-card" style={{ padding: 28, opacity: enabled ? 1 : 0.75, transition: "opacity 0.2s" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -336,7 +590,7 @@ function IntegrationCard({ name, icon, color, description, enabled, lastSync, on
             {icon}
           </div>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span style={{ color: "white", fontWeight: 700, fontSize: "1rem" }}>{name}</span>
               {badge && (
                 <span style={{ fontSize: "0.65rem", color: color, background: `${color}15`, padding: "2px 8px", borderRadius: 9999, border: `1px solid ${color}30` }}>

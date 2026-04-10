@@ -15,7 +15,7 @@ async function getRedditAccessToken(client_id: string, client_secret: string): P
       "Authorization": `Basic ${credentials}`,
       "Content-Type": "application/x-www-form-urlencoded",
       // User-Agent is mandatory — Reddit blocks requests without it
-      "User-Agent": "ObserverAI/1.0",
+      "User-Agent": "SignalApp/1.0",
     },
     body: "grant_type=client_credentials",
   });
@@ -29,7 +29,14 @@ async function getRedditAccessToken(client_id: string, client_secret: string): P
 }
 
 export async function fetchRedditMentions(config: RedditConfig): Promise<RawSignal[]> {
-  const { client_id, client_secret, subreddits, last_sync } = config;
+  const {
+    client_id,
+    client_secret,
+    subreddits,
+    last_sync,
+    min_score = 5,    // Community validation gate: net upvotes required
+    min_comments = 0, // Engagement gate: 0 = score alone is enough
+  } = config;
 
   const accessToken = await getRedditAccessToken(client_id, client_secret);
 
@@ -49,7 +56,7 @@ export async function fetchRedditMentions(config: RedditConfig): Promise<RawSign
         {
           headers: {
             "Authorization": `Bearer ${accessToken}`,
-            "User-Agent": "ObserverAI/1.0",
+            "User-Agent": "SignalApp/1.0",
             "Accept": "application/json",
           },
         }
@@ -64,15 +71,30 @@ export async function fetchRedditMentions(config: RedditConfig): Promise<RawSign
       const posts = (data.data?.children ?? []).map((c) => c.data);
 
       for (const post of posts) {
-        // Skip removed/deleted posts and link posts with no text
-        if (post.selftext === "[removed]" || post.selftext === "") continue;
+        // Skip removed/deleted posts — no signal value
+        if (post.selftext === "[removed]") continue;
+
         // Skip posts older than last_sync
         if (lastSyncEpoch > 0 && post.created_utc <= lastSyncEpoch) continue;
+
+        // ── THRESHOLD GATE 1: Community validation ──────────────────────────
+        // min_score filters out posts nobody upvoted (spam, ignored posts).
+        // A score of 5+ means the community noticed and agreed.
+        if (post.score < min_score) continue;
+
+        // ── THRESHOLD GATE 2: Engagement depth (optional) ───────────────────
+        // When min_comments > 0, require conversation to have started.
+        // Default is 0 — score alone is sufficient signal.
+        if (min_comments > 0 && (post.num_comments ?? 0) < min_comments) continue;
+
+        // Build content: include selftext if present, otherwise title only (link posts)
+        const body = post.selftext?.trim();
+        const content = body ? `${post.title}\n\n${body}` : post.title;
 
         signals.push({
           channel: `reddit-r-${post.subreddit}`,
           sender: post.author,
-          content: `${post.title}\n\n${post.selftext}`.trim(),
+          content,
           timestamp: new Date(post.created_utc * 1000).toISOString(),
         });
       }
@@ -97,5 +119,6 @@ interface RedditPost {
   created_utc: number;
   subreddit: string;
   score: number;
+  num_comments: number;
   url: string;
 }

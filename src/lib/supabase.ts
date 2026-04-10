@@ -96,3 +96,72 @@ export async function logDelivery(delivery: Omit<import("./types").Delivery, "id
   if (error) throw error;
   return data;
 }
+
+// ─── Billing helpers ──────────────────────────────────────────────────────────
+
+/** Increment analysis_count by 1 for the given workspace */
+export async function incrementAnalysisCount(workspaceId: string): Promise<void> {
+  // Read current count then write +1 (acceptable at low-concurrency scale)
+  const { data } = await getSupabaseAdmin()
+    .from("workspaces")
+    .select("analysis_count")
+    .eq("id", workspaceId)
+    .single();
+
+  const current = (data as { analysis_count?: number } | null)?.analysis_count ?? 0;
+  await getSupabaseAdmin()
+    .from("workspaces")
+    .update({ analysis_count: current + 1 })
+    .eq("id", workspaceId);
+}
+
+/** If the monthly reset date has passed, zero the counter and advance it */
+export async function resetAnalysisCountIfNeeded(
+  workspace: import("./types").Workspace,
+): Promise<void> {
+  if (!workspace.analysis_count_reset_at) return;
+  const resetAt = new Date(workspace.analysis_count_reset_at).getTime();
+  if (Date.now() < resetAt) return;
+
+  // Advance reset date to first day of next month
+  const next = new Date();
+  next.setMonth(next.getMonth() + 1);
+  next.setDate(1);
+  next.setHours(0, 0, 0, 0);
+
+  await getSupabaseAdmin()
+    .from("workspaces")
+    .update({ analysis_count: 0, analysis_count_reset_at: next.toISOString() })
+    .eq("id", workspace.id);
+}
+
+/** Patch any billing column(s) on a workspace */
+export async function updateWorkspaceBilling(
+  workspaceId: string,
+  fields: Partial<import("./types").Workspace>,
+): Promise<void> {
+  const { error } = await getSupabaseAdmin()
+    .from("workspaces")
+    .update(fields)
+    .eq("id", workspaceId);
+  if (error) throw error;
+}
+
+/**
+ * Look up a workspace ID from a customer email address.
+ * Used as a fallback in webhook handlers when metadata.workspace_id is absent.
+ */
+export async function getWorkspaceIdByEmail(email: string): Promise<string | null> {
+  // List all auth users and find the one with matching email
+  const { data } = await getSupabaseAdmin().auth.admin.listUsers({ perPage: 1000 });
+  const user = data?.users.find((u) => u.email === email);
+  if (!user) return null;
+
+  const { data: workspace } = await getSupabaseAdmin()
+    .from("workspaces")
+    .select("id")
+    .eq("user_id", user.id)
+    .single();
+
+  return workspace?.id ?? null;
+}

@@ -1,10 +1,17 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getAuthenticatedWorkspaceId } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
+  let workspaceId: string;
+  try {
+    workspaceId = await getAuthenticatedWorkspaceId();
+  } catch {
+    return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
-  const workspaceId = searchParams.get("workspaceId") ?? "00000000-0000-0000-0000-000000000001";
   const source = searchParams.get("source");
   const limit = Number(searchParams.get("limit") ?? 100);
   const offset = Number(searchParams.get("offset") ?? 0);
@@ -25,12 +32,20 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  let workspaceId: string;
+  try {
+    workspaceId = await getAuthenticatedWorkspaceId();
+  } catch {
+    return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+  }
+
   const { signalId } = await req.json();
 
   const { error } = await supabaseAdmin
     .from("signals")
     .update({ reviewed: true })
-    .eq("id", signalId);
+    .eq("id", signalId)
+    .eq("workspace_id", workspaceId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ updated: true });

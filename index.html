@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Observer — AI Product Studio</title>
+  <meta name="description" content="Observer is a three-person AI product studio based in Istanbul. We build AI-native products that shouldn't exist yet." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:       #09090b;
+      --surface:  #101012;
+      --surface2: #18181b;
+      --surface3: #222226;
+      --text:     #fafaf9;
+      --muted:    #71717a;
+      --subtle:   #3f3f46;
+      --accent:   #c8ff3e;
+      --accent2:  #a3e635;
+      --red:      #ef4444;
+      --orange:   #f97316;
+      --amber:    #f59e0b;
+      --border:   rgba(255,255,255,0.06);
+      --radius:   4px;
+      --ff-display: 'Syne', sans-serif;
+      --ff-body:    'Inter', sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      background:var(--bg);
+      color:var(--text);
+      font-family:var(--ff-body);
+      font-size:16px;
+      line-height:1.6;
+      -webkit-font-smoothing:antialiased;
+      overflow-x:hidden;
+    }
+    a{color:inherit;text-decoration:none}
+    img{display:block;max-width:100%}
+
+    /* ── NAV ─────────────────────────────────────────────────── */
+    nav{
+      position:fixed;top:0;left:0;right:0;z-index:200;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 48px;height:60px;
+      border-bottom:1px solid transparent;
+      transition:background .25s,border-color .25s;
+    }
+    nav.scrolled{
+      background:rgba(9,9,11,.85);
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+      border-bottom-color:var(--border);
+    }
+    .nav-logo{
+      font-family:var(--ff-display);
+      font-size:18px;font-weight:800;
+      letter-spacing:-.02em;
+    }
+    .nav-logo span{color:var(--accent)}
+    .nav-links{display:flex;gap:32px;list-style:none}
+    .nav-links a{
+      font-size:13px;font-weight:400;
+      color:var(--muted);transition:color .15s;
+    }
+    .nav-links a:hover{color:var(--text)}
+    .nav-cta{
+      background:var(--accent);color:#09090b;
+      font-size:13px;font-weight:600;
+      padding:8px 18px;border-radius:var(--radius);
+      transition:opacity .15s;display:inline-block;
+    }
+    .nav-cta:hover{opacity:.85}
+
+    /* ── TICKER ───────────────────────────────────────────────── */
+    .ticker{
+      margin-top:60px;
+      border-top:1px solid var(--border);
+      border-bottom:1px solid var(--border);
+      overflow:hidden;white-space:nowrap;
+      padding:10px 0;
+    }
+    .ticker-inner{display:inline-flex;animation:ticker 50s linear infinite}
+    .ticker-item{
+      font-size:11px;font-weight:500;
+      color:var(--muted);letter-spacing:.07em;
+      text-transform:uppercase;padding:0 40px;
+    }
+    .ticker-item b{color:var(--accent);font-weight:600}
+    @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+    /* ── HERO ─────────────────────────────────────────────────── */
+    .hero{
+      max-width:1440px;margin:0 auto;
+      padding:100px 64px 80px;
+    }
+    .eyebrow{
+      display:inline-flex;align-items:center;gap:10px;
+      background:rgba(200,255,62,.08);
+      border:1px solid rgba(200,255,62,.2);
+      border-radius:100px;padding:5px 14px;
+      margin-bottom:40px;
+    }
+    .eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+    .eyebrow-text{
+      font-size:11px;font-weight:600;color:var(--accent);
+      letter-spacing:.08em;text-transform:uppercase;
+    }
+    .hero-headline{
+      font-family:var(--ff-display);
+      font-size:clamp(52px,7vw,100px);
+      font-weight:800;line-height:.93;
+      letter-spacing:-.04em;
+      margin-bottom:32px;
+      max-width:16ch;
+    }
+    .hero-sub{
+      font-size:clamp(16px,1.4vw,19px);
+      font-weight:300;color:var(--muted);
+      max-width:46ch;line-height:1.7;
+      margin-bottom:48px;
+    }
+    .hero-actions{display:flex;gap:14px;align-items:center;margin-bottom:80px}
+    .btn-accent{
+      background:var(--accent);color:#09090b;
+      font-size:14px;font-weight:600;
+      padding:12px 24px;border-radius:var(--radius);
+      transition:opacity .15s;display:inline-block;
+    }
+    .btn-accent:hover{opacity:.85}
+    .btn-ghost{
+      background:transparent;color:var(--text);
+      font-size:14px;font-weight:500;
+      padding:11px 24px;border-radius:var(--radius);
+      border:1px solid var(--border);
+      transition:border-color .15s;display:inline-block;
+    }
+    .btn-ghost:hover{border-color:rgba(255,255,255,.2)}
+
+    /* ── HERO STATS ROW ────────────────────────────────────────── */
+    .hero-stats-row{
+      display:flex;gap:0;
+      border-top:1px solid var(--border);
+    }
+    .hstat{
+      flex:1;padding:20px 0 0;
+      border-right:1px solid var(--border);
+    }
+    .hstat:last-child{border-right:none}
+    .hstat-label{
+      font-size:11px;font-weight:500;
+      color:var(--muted);letter-spacing:.06em;
+      text-transform:uppercase;margin-bottom:4px;
+    }
+    .hstat-value{font-size:15px;font-weight:500;color:var(--text)}
+
+    /* ── SECTION SHARED ────────────────────────────────────────── */
+    .section-wrap{border-top:1px solid var(--border)}
+    .section-inner{max-width:1440px;margin:0 auto;padding:96px 64px}
+    .section-label{
+      font-size:11px;font-weight:600;color:var(--accent);
+      letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;
+    }
+    .section-title{
+      font-family:var(--ff-display);
+      font-size:clamp(32px,3vw,48px);
+      font-weight:800;letter-spacing:-.03em;
+      line-height:1.05;margin-bottom:16px;
+    }
+    .section-sub{
+      font-size:17px;font-weight:300;
+      color:var(--muted);line-height:1.65;
+      max-width:50ch;
+    }
+
+    /* ── PRODUCT FEATURE ROWS ─────────────────────────────────── */
+    .feature-row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:80px;align-items:center;
+    }
+    .feature-row.reverse{direction:rtl}
+    .feature-row.reverse>*{direction:ltr}
+    .feature-text{display:flex;flex-direction:column;gap:20px}
+    .feature-tag{
+      display:inline-flex;align-items:center;gap:8px;
+      width:fit-content;
+    }
+    .ftag-dot{width:7px;height:7px;border-radius:50%}
+    .ftag-dot.live{background:var(--accent)}
+    .ftag-dot.dev{background:var(--muted)}
+    .ftag-label{
+      font-size:11px;font-weight:600;
+      letter-spacing:.08em;text-transform:uppercase;
+      color:var(--muted);
+    }
+    .feature-headline{
+      font-family:var(--ff-display);
+      font-size:clamp(36px,3.5vw,54px);
+      font-weight:800;letter-spacing:-.035em;
+      line-height:1.0;
+    }
+    .feature-body{
+      font-size:16px;font-weight:300;
+      color:var(--muted);line-height:1.75;
+      max-width:40ch;
+    }
+    .feature-link{
+      font-size:13px;font-weight:600;color:var(--accent);
+      display:inline-flex;align-items:center;gap:6px;
+      transition:gap .15s;width:fit-content;
+    }
+    .feature-link:hover{gap:10px}
+
+    /* bullets */
+    .feature-bullets{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+    .fb{
+      display:flex;align-items:flex-start;gap:10px;
+      font-size:14px;color:var(--muted);font-weight:400;line-height:1.5;
+    }
+    .fb-check{
+      width:18px;height:18px;flex-shrink:0;
+      background:rgba(200,255,62,.1);border:1px solid rgba(200,255,62,.25);
+      border-radius:3px;display:flex;align-items:center;justify-content:center;
+      font-size:10px;color:var(--accent);margin-top:1px;
+    }
+
+    /* ── SIGNAL MOCKUP ────────────────────────────────────────── */
+    .mockup-shell{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:8px;
+      overflow:hidden;
+    }
+    .mockup-topbar{
+      background:var(--surface2);
+      border-bottom:1px solid var(--border);
+      padding:12px 16px;
+      display:flex;align-items:center;gap:10px;
+    }
+    .tbar-dots{display:flex;gap:6px}
+    .tbar-dot{width:10px;height:10px;border-radius:50%}
+    .tbar-dot.r{background:#ff5f57}
+    .tbar-dot.y{background:#febc2e}
+    .tbar-dot.g{background:#28c840}
+    .tbar-title{
+      font-size:12px;color:var(--muted);
+      font-weight:500;letter-spacing:.02em;margin-left:4px;
+    }
+    .tbar-badge{
+      margin-left:auto;background:rgba(200,255,62,.12);
+      border:1px solid rgba(200,255,62,.2);
+      color:var(--accent);font-size:10px;font-weight:600;
+      padding:2px 8px;border-radius:100px;letter-spacing:.06em;
+    }
+
+    /* signal body */
+    .signal-body{display:flex;min-height:320px}
+    .signal-sidebar{
+      width:180px;flex-shrink:0;
+      background:var(--surface2);
+      border-right:1px solid var(--border);
+      padding:16px 0;
+    }
+    .sb-section{padding:0 12px;margin-bottom:20px}
+    .sb-label{
+      font-size:10px;font-weight:600;color:var(--subtle);
+      letter-spacing:.08em;text-transform:uppercase;
+      padding:0 4px;margin-bottom:8px;
+    }
+    .sb-item{
+      display:flex;align-items:center;gap:8px;
+      padding:6px 8px;border-radius:4px;
+      font-size:12px;color:var(--muted);font-weight:400;
+      cursor:default;
+    }
+    .sb-item.active{background:rgba(200,255,62,.08);color:var(--text)}
+    .sb-dot{
+      width:6px;height:6px;border-radius:50%;
+      background:var(--subtle);flex-shrink:0;
+    }
+    .sb-dot.on{background:var(--accent)}
+    .sb-count{
+      margin-left:auto;font-size:10px;font-weight:600;
+      background:var(--surface3);color:var(--muted);
+      padding:1px 5px;border-radius:3px;
+    }
+
+    .signal-main{flex:1;padding:20px;overflow:hidden}
+    .sm-header{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:16px;
+    }
+    .sm-title{font-size:13px;font-weight:600;color:var(--text)}
+    .sm-meta{font-size:11px;color:var(--muted)}
+    .sm-run{
+      font-size:11px;font-weight:600;
+      background:var(--accent);color:#09090b;
+      padding:5px 12px;border-radius:3px;
+    }
+
+    .signal-cluster{
+      border:1px solid var(--border);
+      border-radius:5px;margin-bottom:10px;
+      padding:14px 16px;
+      background:var(--surface2);
+      display:flex;gap:14px;align-items:flex-start;
+    }
+    .sc-ring{
+      width:40px;height:40px;flex-shrink:0;
+      position:relative;
+    }
+    .sc-ring svg{width:40px;height:40px}
+    .sc-score{
+      position:absolute;top:50%;left:50%;
+      transform:translate(-50%,-50%);
+      font-size:11px;font-weight:700;color:var(--text);
+    }
+    .sc-body{flex:1;min-width:0}
+    .sc-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px;line-height:1.3}
+    .sc-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .sc-badge{
+      font-size:10px;font-weight:600;
+      padding:2px 6px;border-radius:3px;
+      letter-spacing:.04em;
+    }
+    .sc-badge.critical{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+    .sc-badge.high{background:rgba(249,115,22,.12);color:#f97316;border:1px solid rgba(249,115,22,.2)}
+    .sc-badge.medium{background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}
+    .sc-source{font-size:10px;color:var(--muted);font-weight:500}
+    .sc-right{flex-shrink:0;text-align:right}
+    .sc-count{font-size:18px;font-weight:700;color:var(--text);line-height:1}
+    .sc-clabel{font-size:10px;color:var(--muted)}
+
+    /* terminal strip */
+    .signal-terminal{
+      background:#0d0d0f;
+      border-top:1px solid var(--border);
+      padding:12px 16px;
+      font-family:'SF Mono','Fira Code',monospace;
+      font-size:11px;line-height:1.8;
+    }
+    .t-prompt{color:var(--muted)}
+    .t-cmd{color:#e2e8f0}
+    .t-ok{color:var(--accent)}
+    .t-dim{color:#444}
+    .t-red{color:var(--red)}
+    .t-orange{color:var(--orange)}
+    .t-amber{color:var(--amber)}
+
+    /* ── PLAINIFY MOCKUP ──────────────────────────────────────── */
+    .plainify-shell{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:8px;overflow:hidden;
+    }
+    .plainify-topbar{
+      background:var(--surface2);
+      border-bottom:1px solid var(--border);
+      padding:10px 16px;
+      display:flex;align-items:center;gap:10px;
+    }
+    .plainify-logo{
+      font-family:var(--ff-display);
+      font-size:13px;font-weight:800;
+      letter-spacing:-.02em;color:var(--text);
+    }
+    .plainify-logo span{color:var(--accent)}
+    .p-tabs{
+      display:flex;gap:2px;margin-left:auto;
+    }
+    .p-tab{
+      font-size:11px;font-weight:500;
+      padding:5px 12px;border-radius:3px;
+      color:var(--muted);
+    }
+    .p-tab.active{background:var(--surface3);color:var(--text)}
+    .plainify-split{display:flex;min-height:360px}
+    .p-left{
+      flex:1;border-right:1px solid var(--border);
+      padding:20px;display:flex;flex-direction:column;gap:12px;
+    }
+    .p-right{flex:1;padding:20px;display:flex;flex-direction:column;gap:10px}
+    .p-input-label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+    .p-textarea{
+      background:var(--surface3);
+      border:1px solid var(--border);
+      border-radius:4px;padding:12px;
+      font-family:var(--ff-body);
+      font-size:12px;color:var(--text);
+      line-height:1.65;flex:1;
+      resize:none;outline:none;
+      min-height:120px;
+    }
+    .p-generate{
+      background:var(--accent);color:#09090b;
+      font-size:12px;font-weight:700;
+      padding:8px 16px;border-radius:3px;
+      border:none;cursor:pointer;
+      display:flex;align-items:center;gap:6px;
+      width:fit-content;
+    }
+    .p-output-section{margin-bottom:12px}
+    .p-out-h{
+      font-size:11px;font-weight:700;color:var(--text);
+      margin-bottom:6px;display:flex;align-items:center;gap:6px;
+    }
+    .p-out-h .num{
+      font-size:10px;background:rgba(200,255,62,.12);
+      color:var(--accent);padding:1px 6px;border-radius:2px;
+      font-weight:700;
+    }
+    .p-out-item{
+      display:flex;align-items:flex-start;gap:8px;
+      font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:4px;
+    }
+    .p-check{color:var(--accent);font-size:10px;margin-top:2px;flex-shrink:0}
+    .p-x{color:var(--subtle);font-size:10px;margin-top:2px;flex-shrink:0}
+
+    /* ── QSR STRIP ────────────────────────────────────────────── */
+    .qsr-strip{
+      border-top:1px solid var(--border);
+      border-bottom:1px solid var(--border);
+      background:var(--surface);
+    }
+    .qsr-inner{
+      max-width:1440px;margin:0 auto;padding:56px 64px;
+      display:grid;grid-template-columns:1fr 1fr;
+      gap:80px;align-items:center;
+    }
+    .qsr-label{
+      display:inline-flex;align-items:center;gap:8px;
+      background:var(--surface2);
+      border:1px solid var(--border);
+      border-radius:100px;
+      padding:4px 12px;
+      font-size:11px;font-weight:600;
+      color:var(--muted);letter-spacing:.06em;
+      text-transform:uppercase;margin-bottom:16px;
+    }
+    .qsr-title{
+      font-family:var(--ff-display);
+      font-size:clamp(28px,2.8vw,40px);
+      font-weight:800;letter-spacing:-.03em;
+      line-height:1.1;margin-bottom:14px;
+    }
+    .qsr-body{
+      font-size:15px;font-weight:300;
+      color:var(--muted);line-height:1.7;
+      max-width:44ch;
+    }
+    .qsr-card{
+      background:var(--surface2);
+      border:1px solid var(--border);
+      border-radius:6px;overflow:hidden;
+    }
+    .qsr-card-head{
+      background:var(--surface3);
+      border-bottom:1px solid var(--border);
+      padding:14px 18px;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .qsr-card-title{font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+    .qsr-card-badge{
+      font-size:10px;font-weight:600;
+      background:rgba(200,255,62,.1);
+      color:var(--accent);
+      padding:3px 8px;border-radius:3px;
+      letter-spacing:.04em;
+    }
+    .qsr-metrics{
+      padding:18px;
+      display:grid;grid-template-columns:1fr 1fr 1fr;
+      gap:12px;
+    }
+    .qm{
+      text-align:center;padding:12px;
+      background:var(--surface);
+      border:1px solid var(--border);border-radius:4px;
+    }
+    .qm-val{
+      font-family:var(--ff-display);
+      font-size:22px;font-weight:800;
+      color:var(--text);letter-spacing:-.02em;
+      line-height:1;margin-bottom:4px;
+    }
+    .qm-val .unit{font-size:13px;color:var(--accent)}
+    .qm-label{font-size:10px;color:var(--muted);font-weight:500;line-height:1.3}
+    .qsr-signals{padding:0 18px 18px;display:flex;flex-direction:column;gap:8px}
+    .qs-item{
+      display:flex;align-items:center;gap:10px;
+      padding:10px 12px;background:var(--surface);
+      border:1px solid var(--border);border-radius:4px;
+    }
+    .qs-sev{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .qs-sev.c{background:var(--red)}
+    .qs-sev.h{background:var(--orange)}
+    .qs-sev.m{background:var(--amber)}
+    .qs-title{font-size:11px;color:var(--text);font-weight:500;flex:1}
+    .qs-source{font-size:10px;color:var(--muted)}
+
+    /* ── HOW WE BUILD ─────────────────────────────────────────── */
+    .steps-grid{
+      display:grid;grid-template-columns:repeat(4,1fr);
+      background:var(--border);gap:1px;margin-top:64px;
+    }
+    .step-card{
+      background:var(--surface);
+      padding:40px 32px;position:relative;overflow:hidden;
+    }
+    .step-num{
+      position:absolute;top:-16px;right:16px;
+      font-family:var(--ff-display);
+      font-size:120px;font-weight:800;
+      color:var(--text);opacity:.025;
+      line-height:1;user-select:none;pointer-events:none;
+    }
+    .step-index{
+      font-size:11px;font-weight:600;
+      color:var(--muted);letter-spacing:.06em;
+      margin-bottom:16px;
+    }
+    .step-tag{
+      display:inline-block;
+      font-size:10px;font-weight:700;
+      color:var(--accent);letter-spacing:.08em;
+      text-transform:uppercase;
+      border:1px solid rgba(200,255,62,.25);
+      padding:3px 8px;border-radius:3px;
+      margin-bottom:20px;
+    }
+    .step-title{
+      font-family:var(--ff-display);
+      font-size:22px;font-weight:800;
+      letter-spacing:-.02em;margin-bottom:12px;
+      line-height:1.1;
+    }
+    .step-desc{font-size:13px;font-weight:400;color:var(--muted);line-height:1.65}
+    .step-arrow{
+      position:absolute;top:50%;right:-14px;
+      transform:translateY(-50%);
+      width:28px;height:28px;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:12px;color:var(--muted);z-index:1;
+    }
+
+    /* ── TEAM ─────────────────────────────────────────────────── */
+    .team-trigger{
+      border-top:1px solid var(--border);
+    }
+    .team-trigger-inner{
+      max-width:1440px;margin:0 auto;
+      padding:40px 64px;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .team-trigger-text{font-size:14px;color:var(--muted)}
+    .team-btn{
+      font-family:var(--ff-body);
+      font-size:13px;font-weight:500;
+      background:none;border:1px solid var(--border);
+      color:var(--text);padding:9px 20px;
+      border-radius:var(--radius);cursor:pointer;
+      transition:border-color .15s;
+      display:flex;align-items:center;gap:8px;
+    }
+    .team-btn:hover{border-color:rgba(255,255,255,.2)}
+    .team-btn .arr{transition:transform .3s;display:inline-block}
+    .team-btn.open .arr{transform:rotate(90deg)}
+    .team-expand{
+      max-height:0;overflow:hidden;
+      transition:max-height .5s cubic-bezier(.4,0,.2,1);
+    }
+    .team-expand.open{max-height:800px}
+    .team-grid-wrap{max-width:1440px;margin:0 auto;padding:0 64px 72px}
+    .team-grid{
+      display:grid;grid-template-columns:repeat(3,1fr);
+      background:var(--border);gap:1px;
+    }
+    .team-card{background:var(--surface);padding:40px 36px}
+    .team-avatar{
+      width:48px;height:48px;
+      background:var(--surface2);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      display:flex;align-items:center;justify-content:center;
+      font-family:var(--ff-display);font-size:14px;font-weight:800;
+      color:var(--accent);margin-bottom:20px;
+    }
+    .team-name{
+      font-family:var(--ff-display);font-size:19px;font-weight:800;
+      letter-spacing:-.02em;margin-bottom:4px;
+    }
+    .team-role{
+      font-size:11px;font-weight:600;color:var(--accent);
+      letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;
+    }
+    .team-bio{font-size:13px;font-weight:400;color:var(--muted);line-height:1.7}
+
+    /* ── CONTACT ──────────────────────────────────────────────── */
+    .contact-wrap{
+      border-top:1px solid var(--border);
+      background:var(--surface);
+    }
+    .contact-inner{
+      max-width:1440px;margin:0 auto;
+      padding:96px 64px;
+      display:grid;grid-template-columns:1fr 1fr;
+      gap:80px;align-items:start;
+    }
+    .contact-hl{
+      font-family:var(--ff-display);
+      font-size:clamp(44px,5vw,72px);
+      font-weight:800;letter-spacing:-.04em;
+      line-height:.95;
+    }
+    .contact-hl em{font-style:normal;color:var(--accent)}
+    .contact-body{display:flex;flex-direction:column;gap:28px}
+    .contact-text{
+      font-size:16px;font-weight:300;
+      color:var(--muted);line-height:1.75;max-width:42ch;
+    }
+    .contact-btns{display:flex;gap:14px;flex-wrap:wrap}
+
+    /* ── FOOTER ───────────────────────────────────────────────── */
+    footer{border-top:1px solid var(--border)}
+    .footer-inner{
+      max-width:1440px;margin:0 auto;
+      padding:26px 64px;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .footer-copy{font-size:12px;color:var(--muted)}
+    .footer-links{display:flex;gap:28px}
+    .footer-link{
+      font-size:12px;color:var(--muted);
+      transition:color .15s;
+    }
+    .footer-link:hover{color:var(--text)}
+
+    /* ── RESPONSIVE ───────────────────────────────────────────── */
+    @media(max-width:900px){
+      nav{padding:0 24px}
+      .nav-links{display:none}
+      .hero{padding:80px 24px 60px}
+      .hero-stats-row{flex-wrap:wrap}
+      .hstat{flex:1 0 45%;border-bottom:1px solid var(--border);padding-bottom:16px}
+      .section-inner{padding:64px 24px}
+      .feature-row,.feature-row.reverse{
+        grid-template-columns:1fr;direction:ltr;gap:48px;
+      }
+      .steps-grid{grid-template-columns:1fr 1fr}
+      .step-arrow{display:none}
+      .qsr-inner{grid-template-columns:1fr;gap:40px}
+      .team-trigger-inner{padding:32px 24px;flex-direction:column;align-items:flex-start;gap:16px}
+      .team-grid{grid-template-columns:1fr}
+      .team-grid-wrap{padding:0 24px 56px}
+      .contact-inner{grid-template-columns:1fr;gap:48px;padding:64px 24px}
+      .footer-inner{padding:24px;flex-direction:column;gap:12px;align-items:flex-start}
+      .team-expand.open{max-height:2400px}
+      .plainify-split{flex-direction:column}
+      .p-left{border-right:none;border-bottom:1px solid var(--border)}
+      .signal-body{flex-direction:column}
+      .signal-sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border)}
+    }
+    @media(max-width:600px){
+      .steps-grid{grid-template-columns:1fr}
+      .hero-headline{letter-spacing:-.03em}
+      .qsr-metrics{grid-template-columns:1fr 1fr}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ───────────────────────────────────────────────────────────── -->
+<nav id="main-nav">
+  <a href="#" class="nav-logo">Observer<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="#signal">Signal</a></li>
+    <li><a href="#plainify">Plainify</a></li>
+    <li><a href="#how">How we build</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a href="mailto:efe@observerai.co" class="nav-cta">Get in touch</a>
+</nav>
+
+<!-- ── TICKER ─────────────────────────────────────────────────────────── -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <!-- set 1 -->
+    <span class="ticker-item"><b>Signal</b> — AI product intelligence</span>
+    <span class="ticker-item"><b>Plainify</b> — live at plainify.app</span>
+    <span class="ticker-item">Istanbul based · globally focused</span>
+    <span class="ticker-item">AI-native from day one</span>
+    <span class="ticker-item">Spec it · Build it · Track it · Ship it</span>
+    <span class="ticker-item"><b>Signal</b> — 9 sources · &lt;2m to first insight</span>
+    <span class="ticker-item">Three people · Maximum output</span>
+    <span class="ticker-item">Ship, don't pitch</span>
+    <!-- set 2 (clone for seamless loop) -->
+    <span class="ticker-item"><b>Signal</b> — AI product intelligence</span>
+    <span class="ticker-item"><b>Plainify</b> — live at plainify.app</span>
+    <span class="ticker-item">Istanbul based · globally focused</span>
+    <span class="ticker-item">AI-native from day one</span>
+    <span class="ticker-item">Spec it · Build it · Track it · Ship it</span>
+    <span class="ticker-item"><b>Signal</b> — 9 sources · &lt;2m to first insight</span>
+    <span class="ticker-item">Three people · Maximum output</span>
+    <span class="ticker-item">Ship, don't pitch</span>
+  </div>
+</div>
+
+<!-- ── HERO ───────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="eyebrow">
+    <div class="eyebrow-dot"></div>
+    <span class="eyebrow-text">AI Product Studio — Istanbul</span>
+  </div>
+
+  <h1 class="hero-headline">We build things that shouldn't exist yet.</h1>
+  <p class="hero-sub">Three people. Minimum hierarchy. Maximum output. Observer builds AI-native products for a world that hasn't caught up yet.</p>
+
+  <div class="hero-actions">
+    <a href="mailto:efe@observerai.co" class="btn-accent">Get in touch</a>
+    <a href="https://plainify.app" target="_blank" rel="noopener" class="btn-ghost">Try Plainify →</a>
+  </div>
+
+  <div class="hero-stats-row">
+    <div class="hstat">
+      <div class="hstat-label">Founded</div>
+      <div class="hstat-value">2024 — Istanbul</div>
+    </div>
+    <div class="hstat" style="padding-left:32px">
+      <div class="hstat-label">Products</div>
+      <div class="hstat-value">Signal · Plainify</div>
+    </div>
+    <div class="hstat" style="padding-left:32px">
+      <div class="hstat-label">Model</div>
+      <div class="hstat-value">Studio — ship, don't pitch</div>
+    </div>
+    <div class="hstat" style="padding-left:32px">
+      <div class="hstat-label">Stack</div>
+      <div class="hstat-value">Claude · Vercel · Supabase</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SIGNAL SECTION ─────────────────────────────────────────────────── -->
+<div class="section-wrap" id="signal">
+  <div class="section-inner">
+    <div class="feature-row">
+
+      <!-- text -->
+      <div class="feature-text">
+        <div class="feature-tag">
+          <div class="ftag-dot live"></div>
+          <span class="ftag-label">Signal — Launched</span>
+        </div>
+        <h2 class="feature-headline">Stop guessing what to build next.</h2>
+        <p class="feature-body">Signal reads every signal your users send — support tickets, app reviews, GitHub issues, community posts — and tells your team exactly where to focus.</p>
+        <div class="feature-bullets">
+          <div class="fb">
+            <div class="fb-check">✓</div>
+            <span>Connects to Zendesk, Slack, App Store, Reddit, GitHub, Jira, Intercom and more</span>
+          </div>
+          <div class="fb">
+            <div class="fb-check">✓</div>
+            <span>Claude-powered clustering — groups signals into prioritised Intent Gaps</span>
+          </div>
+          <div class="fb">
+            <div class="fb-check">✓</div>
+            <span>Under 2 minutes from connect to first actionable insight</span>
+          </div>
+          <div class="fb">
+            <div class="fb-check">✓</div>
+            <span>Delivers to Slack, email, or WhatsApp — wherever your team actually works</span>
+          </div>
+        </div>
+        <a href="mailto:efe@observerai.co" class="feature-link">Get early access →</a>
+      </div>
+
+      <!-- Signal UI mockup -->
+      <div class="mockup-shell">
+        <div class="mockup-topbar">
+          <div class="tbar-dots">
+            <div class="tbar-dot r"></div>
+            <div class="tbar-dot y"></div>
+            <div class="tbar-dot g"></div>
+          </div>
+          <span class="tbar-title">Signal — Observer AI</span>
+          <span class="tbar-badge">LIVE</span>
+        </div>
+
+        <div class="signal-body">
+          <div class="signal-sidebar">
+            <div class="sb-section">
+              <div class="sb-label">Overview</div>
+              <div class="sb-item active">
+                <div class="sb-dot on"></div> Intent Gaps
+                <span class="sb-count">3</span>
+              </div>
+              <div class="sb-item">
+                <div class="sb-dot on"></div> All Signals
+                <span class="sb-count">79</span>
+              </div>
+            </div>
+            <div class="sb-section">
+              <div class="sb-label">Sources</div>
+              <div class="sb-item"><div class="sb-dot on"></div> Zendesk</div>
+              <div class="sb-item"><div class="sb-dot on"></div> App Store</div>
+              <div class="sb-item"><div class="sb-dot on"></div> Reddit</div>
+              <div class="sb-item"><div class="sb-dot on"></div> GitHub</div>
+              <div class="sb-item"><div class="sb-dot"></div> Jira</div>
+            </div>
+            <div class="sb-section">
+              <div class="sb-label">Distribute</div>
+              <div class="sb-item"><div class="sb-dot on"></div> Slack digest</div>
+              <div class="sb-item"><div class="sb-dot"></div> Email</div>
+            </div>
+          </div>
+
+          <div class="signal-main">
+            <div class="sm-header">
+              <div>
+                <div class="sm-title">Intent Gaps</div>
+                <div class="sm-meta">79 signals · 3 gaps identified · last run 2 min ago</div>
+              </div>
+              <div class="sm-run">▶ Run analysis</div>
+            </div>
+
+            <!-- cluster 1 -->
+            <div class="signal-cluster">
+              <div class="sc-ring">
+                <svg viewBox="0 0 40 40">
+                  <circle cx="20" cy="20" r="15" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="3"/>
+                  <circle cx="20" cy="20" r="15" fill="none" stroke="#ef4444" stroke-width="3"
+                    stroke-dasharray="94.2" stroke-dashoffset="20" stroke-linecap="round"
+                    transform="rotate(-90 20 20)"/>
+                </svg>
+                <span class="sc-score">88</span>
+              </div>
+              <div class="sc-body">
+                <div class="sc-title">Mobile onboarding drops at step 3</div>
+                <div class="sc-meta">
+                  <span class="sc-badge critical">CRITICAL</span>
+                  <span class="sc-source">34 tickets · ZENDESK, APPSTORE</span>
+                </div>
+              </div>
+              <div class="sc-right">
+                <div class="sc-count">34</div>
+                <div class="sc-clabel">signals</div>
+              </div>
+            </div>
+
+            <!-- cluster 2 -->
+            <div class="signal-cluster">
+              <div class="sc-ring">
+                <svg viewBox="0 0 40 40">
+                  <circle cx="20" cy="20" r="15" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="3"/>
+                  <circle cx="20" cy="20" r="15" fill="none" stroke="#f97316" stroke-width="3"
+                    stroke-dasharray="94.2" stroke-dashoffset="35" stroke-linecap="round"
+                    transform="rotate(-90 20 20)"/>
+                </svg>
+                <span class="sc-score">63</span>
+              </div>
+              <div class="sc-body">
+                <div class="sc-title">Search latency killing trial conversions</div>
+                <div class="sc-meta">
+                  <span class="sc-badge high">HIGH</span>
+                  <span class="sc-source">27 signals · REDDIT, GITHUB</span>
+                </div>
+              </div>
+              <div class="sc-right">
+                <div class="sc-count">27</div>
+                <div class="sc-clabel">signals</div>
+              </div>
+            </div>
+
+            <!-- cluster 3 -->
+            <div class="signal-cluster">
+              <div class="sc-ring">
+                <svg viewBox="0 0 40 40">
+                  <circle cx="20" cy="20" r="15" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="3"/>
+                  <circle cx="20" cy="20" r="15" fill="none" stroke="#f59e0b" stroke-width="3"
+                    stroke-dasharray="94.2" stroke-dashoffset="52" stroke-linecap="round"
+                    transform="rotate(-90 20 20)"/>
+                </svg>
+                <span class="sc-score">45</span>
+              </div>
+              <div class="sc-body">
+                <div class="sc-title">API rate limits blocking enterprise deals</div>
+                <div class="sc-meta">
+                  <span class="sc-badge medium">MEDIUM</span>
+                  <span class="sc-source">18 signals · SLACK, JIRA</span>
+                </div>
+              </div>
+              <div class="sc-right">
+                <div class="sc-count">18</div>
+                <div class="sc-clabel">signals</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="signal-terminal">
+          <div><span class="t-prompt">$ </span><span class="t-cmd">signal analyze --workspace acme</span></div>
+          <div><span class="t-dim">Pulling signals from 5 sources...</span></div>
+          <div><span class="t-ok">✓</span> zendesk &nbsp;&nbsp;<span class="t-dim">34 tickets</span></div>
+          <div><span class="t-ok">✓</span> appstore &nbsp;<span class="t-dim">19 reviews</span></div>
+          <div><span class="t-ok">✓</span> reddit &nbsp;&nbsp;&nbsp;<span class="t-dim">12 posts</span></div>
+          <div><span class="t-ok">✓</span> github &nbsp;&nbsp;&nbsp;<span class="t-dim">8 issues</span></div>
+          <div><span class="t-ok">✓</span> slack &nbsp;&nbsp;&nbsp;&nbsp;<span class="t-dim">6 threads</span></div>
+          <div><span class="t-dim">─────────────────────────────────</span></div>
+          <div><span class="t-dim">3 gaps identified &nbsp;·&nbsp; </span><span class="t-red">1 critical</span><span class="t-dim"> &nbsp;·&nbsp; </span><span class="t-orange">1 high</span><span class="t-dim"> &nbsp;·&nbsp; </span><span class="t-amber">1 medium</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── PLAINIFY SECTION ───────────────────────────────────────────────── -->
+<div class="section-wrap" id="plainify">
+  <div class="section-inner">
+    <div class="feature-row reverse">
+
+      <!-- Plainify UI mockup -->
+      <div class="plainify-shell">
+        <div class="plainify-topbar">
+          <span class="plainify-logo">Plainify<span>.</span></span>
+          <div class="p-tabs">
+            <span class="p-tab active">Spec</span>
+            <span class="p-tab">History</span>
+            <span class="p-tab">Docs</span>
+          </div>
+        </div>
+
+        <div class="plainify-split">
+          <!-- Input -->
+          <div class="p-left">
+            <div class="p-input-label">Your idea</div>
+            <textarea class="p-textarea" readonly>I want to build a task manager that converts Slack messages into trackable tasks, with a dashboard showing priority, owner, and deadline. Should work for teams of 5-50 people.</textarea>
+            <button class="p-generate">⚡ Generate spec  ⌘↵</button>
+          </div>
+
+          <!-- Output -->
+          <div class="p-right">
+            <div class="p-output-section">
+              <div class="p-out-h">Problem <span class="num">clear</span></div>
+              <div class="p-out-item"><span class="p-check">✓</span>Teams lose action items inside Slack threads — no single source of truth.</div>
+            </div>
+            <div class="p-output-section">
+              <div class="p-out-h">User Stories <span class="num">4</span></div>
+              <div class="p-out-item"><span class="p-check">✓</span>PM can flag any message as a task with /task command</div>
+              <div class="p-out-item"><span class="p-check">✓</span>Bot auto-creates ticket on ✅ reaction with context</div>
+              <div class="p-out-item"><span class="p-check">✓</span>Dashboard shows priority, owner, deadline at a glance</div>
+              <div class="p-out-item"><span class="p-check">✓</span>Weekly digest sent to each team member</div>
+            </div>
+            <div class="p-output-section">
+              <div class="p-out-h">Edge Cases <span class="num">3</span></div>
+              <div class="p-out-item"><span class="p-x">○</span>Message deleted before bot processes — handle gracefully</div>
+              <div class="p-out-item"><span class="p-x">○</span>Multiple reactions on same message — deduplicate</div>
+              <div class="p-out-item"><span class="p-x">○</span>Task assigned to someone not in workspace</div>
+            </div>
+            <div class="p-output-section">
+              <div class="p-out-h">Ready for <span class="num">Claude Code · Cursor · Bolt</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- text -->
+      <div class="feature-text">
+        <div class="feature-tag">
+          <div class="ftag-dot live"></div>
+          <span class="ftag-label">Plainify — Live at plainify.app</span>
+        </div>
+        <h2 class="feature-headline">From rough idea to ready spec in seconds.</h2>
+        <p class="feature-body">Plainify turns three lines of thinking into a full product spec. User stories, edge cases, constraints — structured and ready for Claude Code, Cursor, Bolt, or v0.</p>
+        <div class="feature-bullets">
+          <div class="fb">
+            <div class="fb-check">✓</div>
+            <span>Describe your idea in plain English — no template to fill</span>
+          </div>
+          <div class="fb">
+            <div class="fb-check">✓</div>
+            <span>Outputs a structured PRD with problem, stories, and edge cases</span>
+          </div>
+          <div class="fb">
+            <div class="fb-check">✓</div>
+            <span>Works with every major AI code assistant out of the box</span>
+          </div>
+          <div class="fb">
+            <div class="fb-check">✓</div>
+            <span>Free to start — Pro at $19/mo for unlimited specs</span>
+          </div>
+        </div>
+        <a href="https://plainify.app" target="_blank" rel="noopener" class="feature-link">Open Plainify →</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── QSR USE CASE ───────────────────────────────────────────────────── -->
+<div class="qsr-strip">
+  <div class="qsr-inner">
+    <div>
+      <div class="qsr-label">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block"></span>
+        Built with Signal
+      </div>
+      <h3 class="qsr-title">QSR Intelligence — Decision orchestration for quick-service restaurants.</h3>
+      <p class="qsr-body">A Signal-powered product built for a global QSR operator. Aggregates signals from store operations, customer reviews, and market data into a single decision layer — surfacing what to act on before it becomes a problem.</p>
+    </div>
+    <div class="qsr-card">
+      <div class="qsr-card-head">
+        <span class="qsr-card-title">QSR Intelligence Dashboard</span>
+        <span class="qsr-card-badge">SIGNAL-POWERED</span>
+      </div>
+      <div class="qsr-metrics">
+        <div class="qm">
+          <div class="qm-val">94<span class="unit">%</span></div>
+          <div class="qm-label">Signal coverage across locations</div>
+        </div>
+        <div class="qm">
+          <div class="qm-val">&lt;2<span class="unit">m</span></div>
+          <div class="qm-label">Time to first actionable insight</div>
+        </div>
+        <div class="qm">
+          <div class="qm-val">12<span class="unit">x</span></div>
+          <div class="qm-label">Faster than manual reporting</div>
+        </div>
+      </div>
+      <div class="qsr-signals">
+        <div class="qs-item">
+          <div class="qs-sev c"></div>
+          <span class="qs-title">Drive-through wait times up 38% — 3 locations</span>
+          <span class="qs-source">OPS · REVIEWS</span>
+        </div>
+        <div class="qs-item">
+          <div class="qs-sev h"></div>
+          <span class="qs-title">Seasonal menu item underperforming vs. forecast</span>
+          <span class="qs-source">POS · SOCIAL</span>
+        </div>
+        <div class="qs-item">
+          <div class="qs-sev m"></div>
+          <span class="qs-title">Staff scheduling gap detected — weekend peak</span>
+          <span class="qs-source">OPS · TICKETS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── HOW WE BUILD ───────────────────────────────────────────────────── -->
+<div class="section-wrap" id="how">
+  <div class="section-inner">
+    <div class="section-label">How we build</div>
+    <div class="section-title">Four steps. Real tools.<br>End-to-end.</div>
+    <p class="section-sub">From problem statement to shipped product and live monitoring. No unnecessary stops in between.</p>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <span class="step-num">01</span>
+        <div class="step-index">01 / 04</div>
+        <div class="step-tag">Problem first</div>
+        <div class="step-title">Find the idea</div>
+        <p class="step-desc">One sentence. What's the problem? Who has it? Why now? A clear problem statement is the only thing that separates a product from a project that never ships.</p>
+        <div class="step-arrow">→</div>
+      </div>
+      <div class="step-card">
+        <span class="step-num">02</span>
+        <div class="step-index">02 / 04</div>
+        <div class="step-tag">Plainify</div>
+        <div class="step-title">Spec it out</div>
+        <p class="step-desc">Three lines of thinking become a full PRD. User stories, edge cases, constraints — structured and ready for an AI code assistant. No lost-in-translation.</p>
+        <div class="step-arrow">→</div>
+      </div>
+      <div class="step-card">
+        <span class="step-num">03</span>
+        <div class="step-index">03 / 04</div>
+        <div class="step-tag">Claude Code</div>
+        <div class="step-title">Build without drag</div>
+        <p class="step-desc">PRD in, working prototype out. Claude Code compresses the gap between spec and software. We ship at a pace larger teams can't match — not by cutting corners, but by removing drag.</p>
+        <div class="step-arrow">→</div>
+      </div>
+      <div class="step-card">
+        <span class="step-num">04</span>
+        <div class="step-index">04 / 04</div>
+        <div class="step-tag">Signal</div>
+        <div class="step-title">Track what matters</div>
+        <p class="step-desc">Signals in, decisions out. Signal reads every signal your users send and tells you exactly where to focus next. No dashboards. Just clarity on what to build next.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TEAM ───────────────────────────────────────────────────────────── -->
+<div class="team-trigger" id="team">
+  <div class="team-trigger-inner">
+    <span class="team-trigger-text">The people behind Observer.</span>
+    <button class="team-btn" id="team-toggle" aria-expanded="false">
+      Meet the team <span class="arr">→</span>
+    </button>
+  </div>
+</div>
+<div class="team-expand" id="team-expand">
+  <div class="team-grid-wrap">
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-avatar">ED</div>
+        <div class="team-name">Efe Demirbağ</div>
+        <div class="team-role">Product &amp; Strategy</div>
+        <p class="team-bio">15 years across adtech, SaaS, fintech, mobile, and ecommerce. Previously Sojern, Tiko, Huawei, Roamless. Obsessed with the gap between insight and action.</p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">Hİ</div>
+        <div class="team-name">Halil İbrahim Çakıroğlu</div>
+        <div class="team-role">Design &amp; Frontend</div>
+        <p class="team-bio">15+ years shaping product design across fintech, e-commerce, automotive, travel. Built Sketchize, Gerillass, Plainify. Ships solo products that actually get used.</p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">MP</div>
+        <div class="team-name">Melih Polat</div>
+        <div class="team-role">CTO &amp; Engineering</div>
+        <p class="team-bio">Former Head of Engineering at Joi Gifts Dubai. AI consultant at Lean Scale. Founding developer at Tuval. Builds backend systems that don't break when things get serious.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONTACT ────────────────────────────────────────────────────────── -->
+<div class="contact-wrap" id="contact">
+  <div class="contact-inner">
+    <h2 class="contact-hl">Work with <em>us.</em></h2>
+    <div class="contact-body">
+      <p class="contact-text">We take on selective partnerships — companies and investors who want to move fast and build something that matters. If that sounds like you, let's talk.</p>
+      <div class="contact-btns">
+        <a href="mailto:efe@observerai.co" class="btn-accent">Get in touch</a>
+        <a href="https://plainify.app" target="_blank" rel="noopener" class="btn-ghost">Try Plainify →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">&copy; 2025 Observer. Istanbul.</span>
+    <div class="footer-links">
+      <a href="https://plainify.app" target="_blank" rel="noopener" class="footer-link">plainify.app</a>
+      <a href="mailto:efe@observerai.co" class="footer-link">Signal — early access</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Nav scroll
+  const nav = document.getElementById('main-nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 12);
+  }, { passive: true });
+
+  // Team toggle
+  const btn  = document.getElementById('team-toggle');
+  const exp  = document.getElementById('team-expand');
+  btn.addEventListener('click', () => {
+    const open = exp.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open);
+    btn.innerHTML = open
+      ? 'Close <span class="arr">→</span>'
+      : 'Meet the team <span class="arr">→</span>';
+  });
+</script>
+</body>
+</html>

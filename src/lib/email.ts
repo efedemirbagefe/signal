@@ -52,7 +52,7 @@ export function buildEmailHTML(clusters: Cluster[]): string {
         <tr><td style="padding:0 0 32px">
           <div style="display:flex;align-items:center;gap:10px">
             <div style="width:28px;height:28px;border-radius:50%;background:conic-gradient(from 0deg,#46e6a6,#6ea8ff,#a78bfa,#46e6a6)"></div>
-            <strong style="color:#ffffff;font-size:18px">Observer AI</strong>
+            <strong style="color:#ffffff;font-size:18px">Signal</strong>
             <span style="color:#9aa3b2;font-size:13px">· Product Reality Layer</span>
           </div>
           <h1 style="color:#ffffff;font-size:24px;margin:24px 0 8px">Intent Gap Report</h1>
@@ -67,7 +67,7 @@ export function buildEmailHTML(clusters: Cluster[]): string {
         <!-- Footer -->
         <tr><td style="padding:32px 0 0;text-align:center">
           <p style="color:#9aa3b2;font-size:12px;margin:0">
-            Sent by Observer AI · <a href="${process.env.NEXTAUTH_URL}/settings/distribution" style="color:#46e6a6">Manage preferences</a>
+            Sent by Signal · <a href="${process.env.NEXTAUTH_URL}/settings/distribution" style="color:#46e6a6">Manage preferences</a>
           </p>
         </td></tr>
       </table>
@@ -82,9 +82,9 @@ export async function sendEmailBrief(recipients: string[], clusters: Cluster[]) 
   const html = buildEmailHTML(clusters);
 
   await transport.sendMail({
-    from: `Observer AI <${process.env.EMAIL_USER}>`,
+    from: `Signal <${process.env.EMAIL_USER}>`,
     to: recipients.join(", "),
-    subject: `Observer AI – ${clusters.length} Intent Gap${clusters.length !== 1 ? "s" : ""} Detected`,
+    subject: `Signal – ${clusters.length} Intent Gap${clusters.length !== 1 ? "s" : ""} Detected`,
     html,
   });
 }

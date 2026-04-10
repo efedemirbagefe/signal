@@ -10,7 +10,7 @@ export async function sendWhatsAppAlert(toNumber: string, cluster: Cluster) {
   const severityEmoji = cluster.severity >= 70 ? "🔴" : cluster.severity >= 40 ? "🟡" : "🟢";
   const severityLabel = cluster.severity >= 70 ? "HIGH" : cluster.severity >= 40 ? "MEDIUM" : "LOW";
 
-  const body = `${severityEmoji} *Observer AI Alert*
+  const body = `${severityEmoji} *Signal Alert*
 *${cluster.title}*
 Severity: ${severityLabel} (${cluster.severity}/100)
 

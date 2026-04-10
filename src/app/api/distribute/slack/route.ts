@@ -3,10 +3,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { postToSlack } from "@/lib/slack";
 import { getWorkspace, logDelivery, supabaseAdmin } from "@/lib/supabase";
 import type { Cluster } from "@/lib/types";
+import { getAuthenticatedWorkspaceId } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
-  const { workspaceId, clusterId, channelOverride } = await req.json();
-  const wid = workspaceId ?? "00000000-0000-0000-0000-000000000001";
+  let wid: string;
+  try {
+    wid = await getAuthenticatedWorkspaceId();
+  } catch {
+    return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+  }
+
+  const { clusterId, channelOverride } = await req.json();
 
   const workspace = await getWorkspace(wid);
   if (!workspace.slack_bot_token && !workspace.slack_token) {
@@ -16,11 +23,16 @@ export async function POST(req: NextRequest) {
   const token = workspace.slack_bot_token ?? workspace.slack_token;
   const config = workspace.distribution_config?.slack;
 
-  // Get cluster
+  if (!config?.enabled) {
+    return NextResponse.json({ error: "Slack distribution not enabled" }, { status: 400 });
+  }
+
+  // Get cluster (scoped to workspace)
   const { data: cluster } = await supabaseAdmin
     .from("clusters")
     .select("*")
     .eq("id", clusterId)
+    .eq("workspace_id", wid)
     .single();
 
   if (!cluster) {

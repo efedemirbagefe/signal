@@ -7,19 +7,73 @@ interface RawSignal {
   timestamp: string;
 }
 
+// Priority order used for threshold comparison.
+// We build the JQL IN clause from all priorities at or above the configured minimum.
+const JIRA_PRIORITY_ORDER = ["lowest", "low", "medium", "high", "highest"] as const;
+
 export async function fetchJiraIssues(config: JiraConfig): Promise<RawSignal[]> {
-  const { domain, email, api_token, project_key, last_sync } = config;
+  const {
+    domain,
+    email,
+    api_token,
+    project_key,
+    last_sync,
+    min_priority = "medium",  // Only Medium, High, Highest — Low/Lowest = tech debt noise
+    exclude_done = true,       // Skip closed issues — they're resolved, not active signals
+    issue_types = "",          // Empty = all types; e.g. "Bug,Story" to focus
+  } = config;
+
   const credentials = Buffer.from(`${email}:${api_token}`).toString("base64");
   const headers = {
     "Authorization": `Basic ${credentials}`,
     "Accept": "application/json",
   };
 
-  let jql = `project=${project_key} ORDER BY created DESC`;
+  // ── Build JQL with all threshold filters pushed server-side ─────────────
+  // Server-side JQL is far more efficient than client-side filtering:
+  // Jira evaluates the filter index, so we get only matching records back.
+  const jqlParts: string[] = [`project=${project_key}`];
+
+  // Time window — only ingest issues created after last sync
   if (last_sync) {
     const date = new Date(last_sync).toISOString().split("T")[0];
-    jql = `project=${project_key} AND created>="${date}" ORDER BY created DESC`;
+    jqlParts.push(`created>="${date}"`);
   }
+
+  // ── THRESHOLD GATE 1: Priority floor ──────────────────────────────────
+  // Map the configured minimum to all priorities that should pass through.
+  // "medium" → ["Medium", "High", "Highest"] — excludes Lowest + Low noise.
+  // "high"   → ["High", "Highest"] — only urgent issues become signals.
+  // "lowest" → all priorities pass (no filter applied — avoids redundant JQL).
+  const minIdx = JIRA_PRIORITY_ORDER.indexOf(min_priority.toLowerCase() as typeof JIRA_PRIORITY_ORDER[number]);
+  const validIdx = minIdx === -1 ? 2 : minIdx; // default to "medium" if unrecognised
+  if (validIdx > 0) {
+    const includedPriorities = JIRA_PRIORITY_ORDER
+      .slice(validIdx)
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1));
+    jqlParts.push(`priority in (${includedPriorities.join(",")})`);
+  }
+
+  // ── THRESHOLD GATE 2: Status exclusion ────────────────────────────────
+  // Done/Closed issues are already resolved — including them adds historical
+  // noise without any actionable signal.
+  if (exclude_done) {
+    jqlParts.push(`status NOT IN (Done,Closed,Resolved,"Won't Fix",Duplicate)`);
+  }
+
+  // ── THRESHOLD GATE 3: Issue type whitelist ────────────────────────────
+  // When configured, restrict to specific issue types so e.g. "Epic" or
+  // "Sub-task" don't dilute the signal with structural overhead issues.
+  if (issue_types.trim()) {
+    const types = issue_types
+      .split(",")
+      .map((t) => `"${t.trim()}"`)
+      .filter(Boolean)
+      .join(",");
+    jqlParts.push(`issuetype in (${types})`);
+  }
+
+  const jql = jqlParts.join(" AND ") + " ORDER BY created DESC";
 
   const params = new URLSearchParams({
     jql,
@@ -35,12 +89,30 @@ export async function fetchJiraIssues(config: JiraConfig): Promise<RawSignal[]> 
   const data = await res.json() as { issues?: JiraIssue[] };
   const issues: JiraIssue[] = data.issues ?? [];
 
-  return issues.map((issue) => ({
-    channel: `jira-${project_key}`,
-    sender: issue.fields.assignee?.emailAddress ?? "unassigned",
-    content: `[${issue.key}] ${issue.fields.summary}\n\n${extractADFText(issue.fields.description)}`.trim(),
-    timestamp: issue.fields.created,
-  }));
+  return issues.map((issue) => {
+    // Enrich content with structured metadata so the AI clustering pipeline
+    // has context on priority and issue type without needing to join data.
+    const priorityLabel = issue.fields.priority?.name ?? "Unknown";
+    const statusLabel = issue.fields.status?.name ?? "Unknown";
+    const typeLabel = issue.fields.issuetype?.name ?? "Issue";
+    const description = extractADFText(issue.fields.description);
+
+    const content = [
+      `[${issue.key}] ${issue.fields.summary}`,
+      `Priority: ${priorityLabel} · Status: ${statusLabel} · Type: ${typeLabel}`,
+      description,
+    ]
+      .filter(Boolean)
+      .join("\n")
+      .trim();
+
+    return {
+      channel: `jira-${project_key}`,
+      sender: issue.fields.assignee?.emailAddress ?? "unassigned",
+      content,
+      timestamp: issue.fields.created,
+    };
+  });
 }
 
 export async function fetchJiraCurrentSprint(config: JiraConfig): Promise<SprintItem[]> {

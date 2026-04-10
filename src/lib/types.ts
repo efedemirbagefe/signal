@@ -63,17 +63,39 @@ export interface Delivery {
 
 // ─── Integration Configs ──────────────────────────────────────────────────────
 
+/** Slack signal ingestion config (credentials live on workspace top-level fields) */
+export interface SlackIngestConfig {
+  enabled: boolean;
+  max_age_days: number;    // Only pull messages from last N days (default 7)
+  keyword_filter: string;  // Comma-sep keywords — empty = all messages
+  last_sync: string | null;
+}
+
+/** Email/Gmail ingestion config (credentials live on workspace top-level fields) */
+export interface EmailIngestConfig {
+  enabled: boolean;
+  max_age_days: number;    // Only pull emails from last N days (default 7)
+  sender_domains: string;  // Comma-sep domains to watch — empty = all senders
+  last_sync: string | null;
+}
+
 export interface ZendeskConfig {
   enabled: boolean;
   subdomain: string;
   email: string;
   api_token: string;
+  /** Only ingest tickets at or above this priority */
+  min_priority: "low" | "normal" | "high" | "urgent";
+  /** Skip tickets with status closed or solved */
+  exclude_closed: boolean;
   last_sync: string | null;
 }
 
 export interface IntercomConfig {
   enabled: boolean;
   access_token: string;
+  /** Only ingest open conversations */
+  open_only: boolean;
   last_sync: string | null;
 }
 
@@ -83,6 +105,12 @@ export interface JiraConfig {
   email: string;
   api_token: string;
   project_key: string;
+  /** Only ingest issues at or above this priority */
+  min_priority: "lowest" | "low" | "medium" | "high" | "highest";
+  /** Skip issues with status Done, Closed, or Resolved */
+  exclude_done: boolean;
+  /** Comma-sep issue types to include — empty = all (Bug, Story, Epic, Task, etc.) */
+  issue_types: string;
   last_sync: string | null;
 }
 
@@ -90,6 +118,8 @@ export interface AppStoreConfig {
   enabled: boolean;
   app_id_ios: string;
   app_id_android: string;
+  /** Only ingest reviews at or below this star rating (1-5). Default 3 — surfaces negative signals */
+  max_rating: number;
   last_sync: string | null;
 }
 
@@ -98,6 +128,10 @@ export interface GitHubConfig {
   token: string;
   owner: string;
   repo: string;
+  /** Only ingest issues with at least this many reactions */
+  min_reactions: number;
+  /** Comma-sep label names to filter by — empty = all labels */
+  labels: string;
   last_sync: string | null;
 }
 
@@ -106,10 +140,16 @@ export interface RedditConfig {
   client_id: string;
   client_secret: string;
   subreddits: string; // comma-separated: "r/typescript, r/nextjs"
+  /** Only ingest posts with at least this score (upvotes - downvotes) */
+  min_score: number;
+  /** Only ingest posts with at least this many comments */
+  min_comments: number;
   last_sync: string | null;
 }
 
 export interface IntegrationsConfig {
+  slack: SlackIngestConfig;
+  email: EmailIngestConfig;
   zendesk: ZendeskConfig;
   intercom: IntercomConfig;
   jira: JiraConfig;
@@ -144,12 +184,14 @@ export interface DistributionConfig {
     recipients: string[];
     schedule: "instant" | "daily" | "weekly";
   };
+  auto_distribute?: boolean;
 }
 
 export interface Workspace {
   id: string;
   name: string;
   slack_token?: string;
+  slack_bot_token?: string;
   slack_team_id?: string;
   slack_monitored_channels?: string[];
   gmail_token?: string;
@@ -158,6 +200,17 @@ export interface Workspace {
   distribution_config?: DistributionConfig;
   integrations_config?: IntegrationsConfig;
   created_at: string;
+  // ─── Billing ───────────────────────────────────────────────────────────────
+  plan?: "trial" | "pro" | "past_due" | "cancelled" | "expired";
+  trial_ends_at?: string;
+  polar_subscription_id?: string;
+  polar_customer_id?: string;
+  polar_order_id?: string;
+  polar_status?: string;
+  polar_renews_at?: string;
+  polar_ends_at?: string;
+  analysis_count?: number;
+  analysis_count_reset_at?: string;
 }
 
 // ─── Analysis ─────────────────────────────────────────────────────────────────

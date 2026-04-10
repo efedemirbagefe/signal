@@ -2,11 +2,16 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { fetchZendeskTickets } from "@/lib/zendesk";
 import { getWorkspace, insertSignals, getSupabaseAdmin } from "@/lib/supabase";
+import { getAuthenticatedWorkspaceId } from "@/lib/auth";
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   try {
-    const { workspaceId } = await req.json();
-    const wid = workspaceId ?? "00000000-0000-0000-0000-000000000001";
+    let wid: string;
+    try {
+      wid = await getAuthenticatedWorkspaceId();
+    } catch {
+      return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+    }
 
     const workspace = await getWorkspace(wid);
     const config = workspace.integrations_config?.zendesk;
@@ -35,7 +40,6 @@ export async function POST(req: NextRequest) {
 
     const inserted = await insertSignals(signals);
 
-    // Update last_sync
     const newConfig = {
       ...workspace.integrations_config,
       zendesk: { ...config, last_sync: new Date().toISOString() },

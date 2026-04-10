@@ -10,6 +10,13 @@ interface RawSignal {
 export async function fetchAppStoreReviews(config: AppStoreConfig): Promise<RawSignal[]> {
   const signals: RawSignal[] = [];
 
+  // ── max_rating threshold ─────────────────────────────────────────────────
+  // App Store is a negative-signal source by design. We want to catch reviews
+  // where users are frustrated — 1–3 stars signal pain, churn risk, and feature gaps.
+  // 4–5 star reviews confirm what's working but don't drive product action.
+  // Default: max_rating = 3 (only 1, 2, 3 star reviews become signals).
+  const maxRating = config.max_rating ?? 3;
+
   // iOS — iTunes RSS feed (public, no auth required)
   if (config.app_id_ios) {
     try {
@@ -21,16 +28,26 @@ export async function fetchAppStoreReviews(config: AppStoreConfig): Promise<RawS
         const data = await res.json() as { feed?: { entry?: AppStoreEntry[] } };
         // First entry is app metadata — skip it with slice(1)
         const entries: AppStoreEntry[] = (data.feed?.entry ?? []).slice(1);
+
         for (const entry of entries) {
-          const rating = entry["im:rating"]?.label ?? "?";
+          const ratingStr = entry["im:rating"]?.label ?? "5";
+          const ratingNum = parseInt(ratingStr, 10);
+
+          // ── THRESHOLD GATE: Sentiment filter ────────────────────────────
+          // Only ingest reviews at or below max_rating.
+          // A review rated 4+ means the user is satisfied — not a pain signal.
+          // Skip it to reduce noise in the clustering pipeline.
+          if (!isNaN(ratingNum) && ratingNum > maxRating) continue;
+
           const title = entry.title?.label ?? "";
           const body = entry.content?.label ?? "";
           const author = entry.author?.name?.label ?? "anonymous";
           const updated = entry.updated?.label ?? new Date().toISOString();
+
           signals.push({
             channel: `appstore-ios-${config.app_id_ios}`,
             sender: author,
-            content: `[${rating}/5] ${title}: ${body}`.trim(),
+            content: `[${ratingNum}/5 ★] ${title}: ${body}`.trim(),
             timestamp: new Date(updated).toISOString(),
           });
         }

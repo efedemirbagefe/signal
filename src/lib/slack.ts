@@ -51,7 +51,7 @@ export function buildSlackBlocks(cluster: Cluster) {
       type: "header",
       text: {
         type: "plain_text",
-        text: `${severityEmoji} Observer AI – Intent Gap Detected`,
+        text: `${severityEmoji} Signal – Intent Gap Detected`,
       },
     },
     {
@@ -120,6 +120,6 @@ export async function postToSlack(token: string, channelId: string, cluster: Clu
   return client.chat.postMessage({
     channel: channelId,
     blocks: buildSlackBlocks(cluster),
-    text: `Observer AI: Intent Gap – ${cluster.title}`,
+    text: `Signal: Intent Gap – ${cluster.title}`,
   });
 }

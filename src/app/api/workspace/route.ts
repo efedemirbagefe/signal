@@ -1,10 +1,15 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getAuthenticatedWorkspaceId } from "@/lib/auth";
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const workspaceId = searchParams.get("id") ?? "00000000-0000-0000-0000-000000000001";
+export async function GET(_req: NextRequest) {
+  let workspaceId: string;
+  try {
+    workspaceId = await getAuthenticatedWorkspaceId();
+  } catch {
+    return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+  }
 
   const { data, error } = await supabaseAdmin
     .from("workspaces")
@@ -17,12 +22,24 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const { workspaceId, updates } = await req.json();
-  const wid = workspaceId ?? "00000000-0000-0000-0000-000000000001";
+  let wid: string;
+  try {
+    wid = await getAuthenticatedWorkspaceId();
+  } catch {
+    return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+  }
+
+  const { updates } = await req.json();
+
+  // Allowlist updatable fields to prevent overwriting user_id or id
+  const allowed = ["slack_monitored_channels", "distribution_config", "integrations_config"];
+  const safeUpdates = Object.fromEntries(
+    Object.entries(updates ?? {}).filter(([k]) => allowed.includes(k))
+  );
 
   const { data, error } = await supabaseAdmin
     .from("workspaces")
-    .update(updates)
+    .update(safeUpdates)
     .eq("id", wid)
     .select()
     .single();
