@@ -38,18 +38,20 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await sendEmailBrief(recipients, clusters as Cluster[]);
-
-    // Log deliveries for each cluster
+    // Log deliveries BEFORE sending so we have IDs for approve/reject links
+    const deliveryIds: Record<string, string> = {};
     for (const cluster of clusters) {
-      await logDelivery({
+      const delivery = await logDelivery({
         cluster_id: cluster.id,
         channel: "email",
         recipient: recipients.join(", "),
         sent_at: new Date().toISOString(),
         status: "sent",
       });
+      if (delivery?.id) deliveryIds[cluster.id] = delivery.id;
     }
+
+    await sendEmailBrief(recipients, clusters as Cluster[], deliveryIds);
 
     return NextResponse.json({ delivered: clusters.length, recipients });
   } catch (err) {

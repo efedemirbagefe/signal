@@ -9,7 +9,7 @@ export default function PrivacyPage() {
         <div style={{ marginBottom: 48 }}>
           <Link href="/" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 32 }}>
             <div style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--accent-green)" }} />
-            <span style={{ color: "white", fontWeight: 700 }}>Signal</span>
+            <span style={{ color: "white", fontWeight: 700 }}>Signal AI</span>
           </Link>
           <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: "0 0 8px" }}>Privacy Policy</h1>
           <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Last updated: March 2026</p>
@@ -19,7 +19,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 style={{ color: "white", fontSize: "1.1rem", fontWeight: 600, marginBottom: 12 }}>1. Who We Are</h2>
-            <p>Signal (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;) operates the Signal platform at observerai.co. We take your privacy seriously. This policy explains what data we collect, how we use it, and your rights.</p>
+            <p>Signal AI (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;) operates the Signal AI platform at signal-ai.co. We take your privacy seriously. This policy explains what data we collect, how we use it, and your rights.</p>
           </section>
 
           <section>
@@ -37,7 +37,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 style={{ color: "white", fontSize: "1.1rem", fontWeight: 600, marginBottom: 12 }}>4. AI Processing</h2>
-            <p>Signal analysis is powered by Anthropic&apos;s Claude API. When you run an analysis, signal content is sent to Anthropic for processing. Anthropic&apos;s data handling is governed by their <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-green)" }}>Privacy Policy</a>. We recommend not connecting sources containing personally identifiable information of your end-users unless you have appropriate consent.</p>
+            <p>Signal AI analysis is powered by Anthropic&apos;s Claude API. When you run an analysis, signal content is sent to Anthropic for processing. Anthropic&apos;s data handling is governed by their <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-green)" }}>Privacy Policy</a>. We recommend not connecting sources containing personally identifiable information of your end-users unless you have appropriate consent.</p>
           </section>
 
           <section>
@@ -57,7 +57,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 style={{ color: "white", fontSize: "1.1rem", fontWeight: 600, marginBottom: 12 }}>8. Your Rights</h2>
-            <p>You have the right to: (a) access the data we hold about you; (b) correct inaccurate data; (c) delete your account and data; (d) export your data. To exercise these rights, email us at <a href="mailto:hello@observerai.co" style={{ color: "var(--accent-green)" }}>hello@observerai.co</a>.</p>
+            <p>You have the right to: (a) access the data we hold about you; (b) correct inaccurate data; (c) delete your account and data; (d) export your data. To exercise these rights, email us at <a href="mailto:hello@signal-ai.co" style={{ color: "var(--accent-green)" }}>hello@signal-ai.co</a>.</p>
           </section>
 
           <section>
@@ -72,7 +72,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 style={{ color: "white", fontSize: "1.1rem", fontWeight: 600, marginBottom: 12 }}>11. Contact</h2>
-            <p>Privacy questions or requests: <a href="mailto:hello@observerai.co" style={{ color: "var(--accent-green)" }}>hello@observerai.co</a></p>
+            <p>Privacy questions or requests: <a href="mailto:hello@signal-ai.co" style={{ color: "var(--accent-green)" }}>hello@signal-ai.co</a></p>
           </section>
 
         </div>

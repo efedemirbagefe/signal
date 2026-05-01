@@ -9,7 +9,7 @@ export default function TermsPage() {
         <div style={{ marginBottom: 48 }}>
           <Link href="/" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 32 }}>
             <div style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--accent-green)" }} />
-            <span style={{ color: "white", fontWeight: 700 }}>Signal</span>
+            <span style={{ color: "white", fontWeight: 700 }}>Signal AI</span>
           </Link>
           <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: "0 0 8px" }}>Terms of Service</h1>
           <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Last updated: March 2026</p>
@@ -19,22 +19,22 @@ export default function TermsPage() {
 
           <section>
             <h2 style={{ color: "white", fontSize: "1.1rem", fontWeight: 600, marginBottom: 12 }}>1. Agreement to Terms</h2>
-            <p>By accessing or using Signal (&ldquo;the Service&rdquo;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service. The Service is operated by Signal (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;).</p>
+            <p>By accessing or using Signal AI (&ldquo;the Service&rdquo;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service. The Service is operated by Signal AI (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;).</p>
           </section>
 
           <section>
             <h2 style={{ color: "white", fontSize: "1.1rem", fontWeight: 600, marginBottom: 12 }}>2. Description of Service</h2>
-            <p>Signal is a product intelligence platform that collects signals from connected data sources (Slack, Jira, Zendesk, Intercom, GitHub, and others), analyzes them using AI, and surfaces actionable insights for product teams. You connect your own data sources and control what data is processed.</p>
+            <p>Signal AI is a product intelligence platform that collects signals from connected data sources (Slack, Jira, Zendesk, Intercom, GitHub, and others), analyzes them using AI, and surfaces actionable insights for product teams. You connect your own data sources and control what data is processed.</p>
           </section>
 
           <section>
             <h2 style={{ color: "white", fontSize: "1.1rem", fontWeight: 600, marginBottom: 12 }}>3. Your Account</h2>
-            <p>You must provide accurate information when creating an account. You are responsible for maintaining the confidentiality of your credentials and for all activity under your account. Notify us immediately at <a href="mailto:hello@observerai.co" style={{ color: "var(--accent-green)" }}>hello@observerai.co</a> if you suspect unauthorized access.</p>
+            <p>You must provide accurate information when creating an account. You are responsible for maintaining the confidentiality of your credentials and for all activity under your account. Notify us immediately at <a href="mailto:hello@signal-ai.co" style={{ color: "var(--accent-green)" }}>hello@signal-ai.co</a> if you suspect unauthorized access.</p>
           </section>
 
           <section>
             <h2 style={{ color: "white", fontSize: "1.1rem", fontWeight: 600, marginBottom: 12 }}>4. Your Data</h2>
-            <p>You retain ownership of all data you connect to Signal. By using the Service, you grant us a limited license to process your data solely to provide the Service. We do not sell your data to third parties. We use Anthropic&apos;s Claude API to analyze signals — data sent to Claude is subject to <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-green)" }}>Anthropic&apos;s Privacy Policy</a>.</p>
+            <p>You retain ownership of all data you connect to Signal AI. By using the Service, you grant us a limited license to process your data solely to provide the Service. We do not sell your data to third parties. We use Anthropic&apos;s Claude API to analyze signals — data sent to Claude is subject to <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-green)" }}>Anthropic&apos;s Privacy Policy</a>.</p>
           </section>
 
           <section>
@@ -59,7 +59,7 @@ export default function TermsPage() {
 
           <section>
             <h2 style={{ color: "white", fontSize: "1.1rem", fontWeight: 600, marginBottom: 12 }}>9. Limitation of Liability</h2>
-            <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, SIGNAL SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES ARISING FROM YOUR USE OF THE SERVICE. OUR TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT YOU PAID US IN THE PAST 12 MONTHS.</p>
+            <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, SIGNAL AI SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES ARISING FROM YOUR USE OF THE SERVICE. OUR TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT YOU PAID US IN THE PAST 12 MONTHS.</p>
           </section>
 
           <section>
@@ -69,7 +69,7 @@ export default function TermsPage() {
 
           <section>
             <h2 style={{ color: "white", fontSize: "1.1rem", fontWeight: 600, marginBottom: 12 }}>11. Contact</h2>
-            <p>Questions about these Terms? Contact us at <a href="mailto:hello@observerai.co" style={{ color: "var(--accent-green)" }}>hello@observerai.co</a>.</p>
+            <p>Questions about these Terms? Contact us at <a href="mailto:hello@signal-ai.co" style={{ color: "var(--accent-green)" }}>hello@signal-ai.co</a>.</p>
           </section>
         </div>
 

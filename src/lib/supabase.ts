@@ -74,10 +74,21 @@ export async function getPendingSignals(workspaceId: string, limit = 500) {
   return data ?? [];
 }
 
-// Helper to upsert clusters
+// Helper to upsert clusters — replaces active clusters for the workspace so
+// repeated analysis runs don't pile up. Approved/dismissed clusters are kept.
 export async function upsertClusters(
   clusters: Omit<import("./types").Cluster, "id" | "created_at" | "updated_at">[]
 ) {
+  if (clusters.length === 0) return [];
+  const workspaceId = clusters[0].workspace_id;
+
+  // Remove previous active clusters so we don't accumulate duplicates
+  await getSupabaseAdmin()
+    .from("clusters")
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("status", "active");
+
   const { data, error } = await getSupabaseAdmin()
     .from("clusters")
     .insert(clusters)

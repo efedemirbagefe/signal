@@ -13,14 +13,16 @@ interface WorkspaceMeta {
 }
 
 const defaultConfig: IntegrationsConfig = {
-  slack:    { enabled: false, max_age_days: 7, keyword_filter: "", last_sync: null },
-  email:    { enabled: false, max_age_days: 7, sender_domains: "", last_sync: null },
-  zendesk:  { enabled: false, subdomain: "", email: "", api_token: "", min_priority: "normal", exclude_closed: true, last_sync: null },
-  intercom: { enabled: false, access_token: "", open_only: true, last_sync: null },
-  jira:     { enabled: false, domain: "", email: "", api_token: "", project_key: "", min_priority: "low", exclude_done: true, issue_types: "", last_sync: null },
-  appstore: { enabled: false, app_id_ios: "", app_id_android: "", max_rating: 3, last_sync: null },
-  github:   { enabled: false, token: "", owner: "", repo: "", min_reactions: 0, labels: "", last_sync: null },
-  reddit:   { enabled: false, client_id: "", client_secret: "", subreddits: "", min_score: 5, min_comments: 0, last_sync: null },
+  slack:           { enabled: false, max_age_days: 7, keyword_filter: "", last_sync: null },
+  email:           { enabled: false, max_age_days: 7, sender_domains: "", last_sync: null },
+  zendesk:         { enabled: false, subdomain: "", email: "", api_token: "", min_priority: "normal", exclude_closed: true, last_sync: null },
+  intercom:        { enabled: false, access_token: "", open_only: true, last_sync: null },
+  jira:            { enabled: false, domain: "", email: "", api_token: "", project_key: "", min_priority: "low", exclude_done: true, issue_types: "", last_sync: null },
+  appstore:        { enabled: false, app_id_ios: "", app_id_android: "", max_rating: 3, last_sync: null },
+  googleplay:      { enabled: false, package_name: "", service_account_key: "", max_rating: 3, last_sync: null },
+  googleanalytics: { enabled: false, property_id: "", service_account_email: "", service_account_key: "", event_filter: "", last_sync: null },
+  github:          { enabled: false, token: "", owner: "", repo: "", min_reactions: 0, labels: "", last_sync: null },
+  reddit:          { enabled: false, client_id: "", client_secret: "", subreddits: "", min_score: 5, min_comments: 0, last_sync: null },
 };
 
 function formatLastSync(ts: string | null): string {

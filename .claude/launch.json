@@ -6,6 +6,19 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "vibemarket",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "3001"],
+      "port": 3001,
+      "cwd": "../playground/vibemarket"
+    },
+    {
+      "name": "deck",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/Users/macintosh/Downloads", "-p", "4000", "--no-clipboard"],
+      "port": 4000
     }
   ]
 }

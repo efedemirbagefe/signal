@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   // Workspace ID must be in query string — user sets it in Twilio webhook URL
-  // e.g. https://observer-ai-umber.vercel.app/api/webhooks/whatsapp?workspaceId=<id>
+  // e.g. https://signal-ai.co/api/webhooks/whatsapp?workspaceId=<id>
   const workspaceId = req.nextUrl.searchParams.get("workspaceId");
   if (!workspaceId) {
     return new NextResponse("Missing workspaceId", { status: 400 });

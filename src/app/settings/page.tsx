@@ -6,7 +6,7 @@ import TopNav from "@/components/layout/TopNav";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
-type Tab = "profile" | "billing" | "notifications" | "account";
+type Tab = "profile" | "billing" | "thresholds" | "notifications" | "account";
 
 const TRIAL_LIMIT = 10;
 
@@ -73,6 +73,17 @@ export default function SettingsPage() {
     emailOnCritical: true,
     slackMentions: false,
   });
+  const [savingNotifs, setSavingNotifs] = useState(false);
+  const [savedNotifs, setSavedNotifs] = useState(false);
+
+  // Thresholds
+  const [thresholds, setThresholds] = useState({
+    min_severity: 70,
+    min_evidence: 5,
+    cooldown_hours: 24,
+  });
+  const [savingThresholds, setSavingThresholds] = useState(false);
+  const [savedThresholds, setSavedThresholds] = useState(false);
 
   // Account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -95,7 +106,11 @@ export default function SettingsPage() {
         const wsRes = await fetch("/api/workspace");
         if (wsRes.ok) {
           const wd = await wsRes.json();
-          setWorkspace(wd.workspace ?? null);
+          const ws = wd.workspace ?? null;
+          setWorkspace(ws);
+          if (ws?.distribution_config?.thresholds) {
+            setThresholds(ws.distribution_config.thresholds);
+          }
         }
         setLoading(false);
       } catch {
@@ -106,11 +121,18 @@ export default function SettingsPage() {
 
   const saveProfile = async () => {
     setSavingProfile(true);
-    // In production, save display name to user profile
-    await new Promise((r) => setTimeout(r, 800));
-    setSavingProfile(false);
-    setSavedProfile(true);
-    setTimeout(() => setSavedProfile(false), 2500);
+    try {
+      // Persist display name via the session API (updates Supabase user metadata)
+      await fetch("/api/auth/update-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayName }),
+      });
+      setSavedProfile(true);
+      setTimeout(() => setSavedProfile(false), 2500);
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   if (loading) {
@@ -125,9 +147,50 @@ export default function SettingsPage() {
   const tabs: Array<{ key: Tab; label: string; icon: string }> = [
     { key: "profile",       label: "Profile",       icon: "👤" },
     { key: "billing",       label: "Billing",        icon: "💳" },
+    { key: "thresholds",   label: "Thresholds",     icon: "🎛️" },
     { key: "notifications", label: "Notifications",  icon: "🔔" },
     { key: "account",       label: "Account",        icon: "⚙️" },
   ];
+
+  const saveThresholds = async () => {
+    setSavingThresholds(true);
+    try {
+      const distConfig = workspace?.distribution_config ?? {};
+      const res = await fetch("/api/workspace", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates: { distribution_config: { ...distConfig, thresholds } } }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWorkspace(data.workspace ?? workspace);
+      }
+      setSavedThresholds(true);
+      setTimeout(() => setSavedThresholds(false), 2500);
+    } finally {
+      setSavingThresholds(false);
+    }
+  };
+
+  const saveNotifications = async () => {
+    setSavingNotifs(true);
+    try {
+      const distConfig = workspace?.distribution_config ?? {};
+      const res = await fetch("/api/workspace", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates: { distribution_config: { ...distConfig, notifications: notifConfig } } }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWorkspace(data.workspace ?? workspace);
+      }
+      setSavedNotifs(true);
+      setTimeout(() => setSavedNotifs(false), 2500);
+    } finally {
+      setSavingNotifs(false);
+    }
+  };
 
   const plan = workspace?.plan ?? "trial";
   const polarStatus = workspace?.polar_status;
@@ -395,6 +458,118 @@ export default function SettingsPage() {
               </div>
             )}
 
+            {/* ───── Thresholds tab ───── */}
+            {activeTab === "thresholds" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ background: "var(--card)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "24px 28px" }}>
+                  <h3 style={{ color: "#fff", fontWeight: 600, fontSize: "1rem", margin: "0 0 6px" }}>Signal Firing Thresholds</h3>
+                  <p style={{ color: "var(--muted)", fontSize: "0.8rem", margin: "0 0 24px", lineHeight: 1.6 }}>
+                    Control when Signal fires alerts. Clusters below these thresholds are still visible in the dashboard but won&apos;t trigger notifications.
+                  </p>
+
+                  {/* Min severity slider */}
+                  <div style={{ marginBottom: 24 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div>
+                        <div style={{ color: "#fff", fontWeight: 500, fontSize: "0.875rem" }}>Minimum severity</div>
+                        <div style={{ color: "var(--muted)", fontSize: "0.75rem", marginTop: 2 }}>Clusters below this score won&apos;t fire alerts</div>
+                      </div>
+                      <div style={{
+                        padding: "4px 12px", borderRadius: 20,
+                        background: thresholds.min_severity >= 80 ? "rgba(239,68,68,0.12)" : thresholds.min_severity >= 60 ? "rgba(249,115,22,0.12)" : "rgba(245,158,11,0.12)",
+                        border: `1px solid ${thresholds.min_severity >= 80 ? "rgba(239,68,68,0.25)" : thresholds.min_severity >= 60 ? "rgba(249,115,22,0.25)" : "rgba(245,158,11,0.25)"}`,
+                        color: thresholds.min_severity >= 80 ? "#f87171" : thresholds.min_severity >= 60 ? "var(--accent)" : "#fbbf24",
+                        fontSize: "0.75rem", fontWeight: 700,
+                        fontFamily: "'JetBrains Mono', monospace",
+                      }}>
+                        {thresholds.min_severity}
+                      </div>
+                    </div>
+                    <input
+                      type="range" min={0} max={100} step={5}
+                      value={thresholds.min_severity}
+                      onChange={(e) => setThresholds((t) => ({ ...t, min_severity: Number(e.target.value) }))}
+                      style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }}
+                    />
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+                      <span style={{ color: "var(--muted-dim)", fontSize: "0.67rem" }}>0 — All clusters</span>
+                      <span style={{ color: "var(--muted-dim)", fontSize: "0.67rem" }}>100 — Critical only</span>
+                    </div>
+                  </div>
+
+                  {/* Min evidence */}
+                  <div style={{ marginBottom: 24 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div>
+                        <div style={{ color: "#fff", fontWeight: 500, fontSize: "0.875rem" }}>Minimum evidence count</div>
+                        <div style={{ color: "var(--muted)", fontSize: "0.75rem", marginTop: 2 }}>Minimum number of signals to form an alertable cluster</div>
+                      </div>
+                      <div style={{
+                        padding: "4px 12px", borderRadius: 20,
+                        background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                        color: "#fff", fontSize: "0.75rem", fontWeight: 700,
+                        fontFamily: "'JetBrains Mono', monospace",
+                      }}>
+                        {thresholds.min_evidence}
+                      </div>
+                    </div>
+                    <input
+                      type="range" min={1} max={50} step={1}
+                      value={thresholds.min_evidence}
+                      onChange={(e) => setThresholds((t) => ({ ...t, min_evidence: Number(e.target.value) }))}
+                      style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }}
+                    />
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+                      <span style={{ color: "var(--muted-dim)", fontSize: "0.67rem" }}>1 signal</span>
+                      <span style={{ color: "var(--muted-dim)", fontSize: "0.67rem" }}>50 signals</span>
+                    </div>
+                  </div>
+
+                  {/* Cooldown */}
+                  <div style={{ marginBottom: 28 }}>
+                    <div style={{ color: "#fff", fontWeight: 500, fontSize: "0.875rem", marginBottom: 4 }}>Alert cooldown</div>
+                    <div style={{ color: "var(--muted)", fontSize: "0.75rem", marginBottom: 10 }}>Don&apos;t re-alert the same cluster within this window</div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {([24, 48, 168] as const).map((h) => (
+                        <button
+                          key={h}
+                          onClick={() => setThresholds((t) => ({ ...t, cooldown_hours: h }))}
+                          style={{
+                            padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer",
+                            background: thresholds.cooldown_hours === h ? "rgba(249,115,22,0.12)" : "rgba(255,255,255,0.04)",
+                            color: thresholds.cooldown_hours === h ? "var(--accent)" : "var(--muted-light)",
+                            fontSize: "0.82rem", fontWeight: thresholds.cooldown_hours === h ? 600 : 400,
+                            outline: thresholds.cooldown_hours === h ? "1px solid rgba(249,115,22,0.25)" : "1px solid transparent",
+                            transition: "all 0.12s",
+                          }}
+                        >
+                          {h === 24 ? "24h" : h === 48 ? "48h" : "1 week"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    className="btn-primary"
+                    onClick={saveThresholds}
+                    disabled={savingThresholds}
+                    style={{ fontSize: "0.875rem", padding: "9px 20px" }}
+                  >
+                    {savingThresholds ? "Saving…" : savedThresholds ? "✓ Saved" : "Save Thresholds"}
+                  </button>
+                </div>
+
+                {/* Quick summary */}
+                <div style={{ background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.15)", borderRadius: 12, padding: "16px 20px" }}>
+                  <p style={{ color: "var(--muted-light)", fontSize: "0.82rem", margin: 0, lineHeight: 1.7 }}>
+                    📡 Signal will fire alerts for clusters with severity ≥ <strong style={{ color: "#fff" }}>{thresholds.min_severity}</strong>,
+                    backed by at least <strong style={{ color: "#fff" }}>{thresholds.min_evidence}</strong> evidence signals,
+                    and will not re-alert within <strong style={{ color: "#fff" }}>{thresholds.cooldown_hours}h</strong> for the same cluster.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* ───── Notifications tab ───── */}
             {activeTab === "notifications" && (
               <div style={{ background: "var(--card)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "24px 28px" }}>
@@ -432,8 +607,13 @@ export default function SettingsPage() {
                   <p style={{ color: "var(--muted)", fontSize: "0.78rem", margin: "0 0 14px" }}>
                     Email notifications are sent to <span style={{ color: "var(--muted-light)" }}>{userEmail}</span>
                   </p>
-                  <button className="btn-primary" style={{ fontSize: "0.875rem", padding: "8px 18px" }}>
-                    Save preferences
+                  <button
+                    className="btn-primary"
+                    onClick={saveNotifications}
+                    disabled={savingNotifs}
+                    style={{ fontSize: "0.875rem", padding: "8px 18px" }}
+                  >
+                    {savingNotifs ? "Saving…" : savedNotifs ? "✓ Saved" : "Save preferences"}
                   </button>
                 </div>
               </div>
@@ -514,7 +694,7 @@ export default function SettingsPage() {
                         </button>
                       </div>
                       <p style={{ color: "var(--muted)", fontSize: "0.75rem", margin: 0 }}>
-                        To permanently delete your workspace, contact <a href="mailto:support@observer-ai.com" style={{ color: "var(--accent)" }}>support@observer-ai.com</a>
+                        To permanently delete your workspace, contact <a href="mailto:support@signal-ai.co" style={{ color: "var(--accent)" }}>support@signal-ai.co</a>
                       </p>
                     </div>
                   )}

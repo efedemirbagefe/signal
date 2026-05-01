@@ -38,15 +38,17 @@ interface SourcePillProps {
 }
 
 const sourceConfig: Record<SignalSource, { label: string; color: string; text: string; icon: string }> = {
-  slack:    { label: "Slack",         color: "#4A154B", text: "#e879f9", icon: "⚡" },
-  email:    { label: "Email",         color: "#1a3a5c", text: "#6ea8ff", icon: "✉️" },
-  whatsapp: { label: "WhatsApp",      color: "#0a3d23", text: "#46e6a6", icon: "💬" },
-  zendesk:  { label: "Zendesk",       color: "#2d1f00", text: "#f79a00", icon: "🎫" },
-  intercom: { label: "Intercom",      color: "#0d2137", text: "#4dabf7", icon: "💼" },
-  jira:     { label: "Jira",          color: "#0a1e3d", text: "#2684ff", icon: "📋" },
-  appstore: { label: "App Store",     color: "#1c1030", text: "#a78bfa", icon: "⭐" },
-  github:   { label: "GitHub",        color: "#161b22", text: "#c9d1d9", icon: "🐙" },
-  reddit:   { label: "Reddit",        color: "#2d1200", text: "#ff4500", icon: "👾" },
+  slack:           { label: "Slack",            color: "#4A154B", text: "#e879f9", icon: "⚡" },
+  email:           { label: "Email",            color: "#1a3a5c", text: "#6ea8ff", icon: "✉️" },
+  whatsapp:        { label: "WhatsApp",         color: "#0a3d23", text: "#46e6a6", icon: "💬" },
+  zendesk:         { label: "Zendesk",          color: "#2d1f00", text: "#f79a00", icon: "🎫" },
+  intercom:        { label: "Intercom",         color: "#0d2137", text: "#4dabf7", icon: "💼" },
+  jira:            { label: "Jira",             color: "#0a1e3d", text: "#2684ff", icon: "📋" },
+  appstore:        { label: "App Store",        color: "#1c1030", text: "#a78bfa", icon: "⭐" },
+  googleplay:      { label: "Google Play",      color: "#0a2d1a", text: "#34d399", icon: "🎮" },
+  googleanalytics: { label: "Google Analytics", color: "#1a1a2d", text: "#818cf8", icon: "📊" },
+  github:          { label: "GitHub",           color: "#161b22", text: "#c9d1d9", icon: "🐙" },
+  reddit:          { label: "Reddit",           color: "#2d1200", text: "#ff4500", icon: "👾" },
 };
 
 export function SourcePill({ source, count }: SourcePillProps) {

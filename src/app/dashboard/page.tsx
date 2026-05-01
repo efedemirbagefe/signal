@@ -5,7 +5,7 @@ import Link from "next/link";
 import TopNav from "@/components/layout/TopNav";
 import { IntentSnapshotModal } from "@/components/IntentSnapshotModal";
 import { supabaseClient } from "@/lib/supabase-client";
-import type { Cluster, Workspace } from "@/lib/types";
+import type { Cluster, Workspace, OutputConfig } from "@/lib/types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -59,15 +59,16 @@ function revenueImpact(business_case?: string): string {
 function countConnectedSources(workspace: Workspace | null): number {
   if (!workspace) return 0;
   let count = 0;
-  if (workspace.slack_token) count++;
-  if (workspace.gmail_token) count++;
   const ic = workspace.integrations_config;
   if (ic) {
-    const keys = ["zendesk","intercom","jira","appstore","github","reddit"] as const;
+    // All 8 active ingest sources
+    const keys = ["appstore","email","reddit","zendesk","intercom","slack","jira","github"] as const;
     for (const k of keys) {
       if ((ic[k] as { enabled?: boolean })?.enabled) count++;
     }
   }
+  // Also count Gmail OAuth connection (stored as slack_token/gmail_token on workspace)
+  if (workspace.gmail_token) count = Math.max(count, count); // already counted via email above
   return count;
 }
 
@@ -223,7 +224,7 @@ function AIInsightBanner({ clusters, onClose }: { clusters: Cluster[]; onClose: 
               background: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.18)",
               fontSize: "0.62rem", fontWeight: 600, color: "var(--accent)",
             }}>
-              {current.confidence}% confidence
+              {Math.round(current.confidence * 100)}% confidence
             </span>
           </div>
           <p style={{ fontWeight: 600, fontSize: "0.92rem", color: "#fff", margin: "0 0 3px", lineHeight: 1.4 }}>
@@ -333,7 +334,7 @@ function SignalCard({
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: "0.67rem", color: "var(--muted)",
         }}>
-          <span style={{ color, fontWeight: 700 }}>{cluster.confidence}%</span>
+          <span style={{ color, fontWeight: 700 }}>{Math.round(cluster.confidence * 100)}%</span>
         </span>
         <span style={{
           marginLeft: "auto",
@@ -350,7 +351,7 @@ function SignalCard({
         background: "rgba(255,255,255,0.05)", overflow: "hidden",
       }}>
         <div style={{
-          height: "100%", width: `${cluster.confidence}%`,
+          height: "100%", width: `${cluster.confidence * 100}%`,
           background: color, opacity: 0.5, borderRadius: 1,
         }} />
       </div>
@@ -395,14 +396,45 @@ function BriefSection({
 
 type ApprovalState = "pending" | "approved" | "rejected";
 
+function OutputButton({
+  label, icon, href, configured,
+}: { label: string; icon: string; href: string; configured: boolean }) {
+  return (
+    <a
+      href={href}
+      style={{
+        display: "flex", alignItems: "center", gap: 7,
+        padding: "7px 10px", borderRadius: 7, textDecoration: "none",
+        border: `1px solid ${configured ? "rgba(34,197,94,0.22)" : "var(--border)"}`,
+        background: configured ? "rgba(34,197,94,0.05)" : "rgba(255,255,255,0.02)",
+        color: configured ? "#4ade80" : "var(--muted)",
+        fontSize: "0.75rem", fontWeight: 600, flex: 1,
+        transition: "all 0.12s",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(249,115,22,0.07)"; e.currentTarget.style.borderColor = "rgba(249,115,22,0.25)"; e.currentTarget.style.color = "var(--accent)"; }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = configured ? "rgba(34,197,94,0.05)" : "rgba(255,255,255,0.02)";
+        e.currentTarget.style.borderColor = configured ? "rgba(34,197,94,0.22)" : "var(--border)";
+        e.currentTarget.style.color = configured ? "#4ade80" : "var(--muted)";
+      }}
+    >
+      <span style={{ fontSize: "0.85rem" }}>{icon}</span>
+      <span>{label}</span>
+      {configured && <span style={{ marginLeft: "auto", fontSize: "0.62rem", opacity: 0.7 }}>↗</span>}
+      {!configured && <span style={{ marginLeft: "auto", fontSize: "0.62rem", opacity: 0.5 }}>Set up</span>}
+    </a>
+  );
+}
+
 function ExecutionBrief({
-  cluster, approval, onApprove, onReject, onViewFull,
+  cluster, approval, onApprove, onReject, onViewFull, outputConfig,
 }: {
   cluster: Cluster | null;
   approval: ApprovalState;
   onApprove: () => void;
   onReject: () => void;
   onViewFull: () => void;
+  outputConfig?: OutputConfig;
 }) {
   if (!cluster) {
     return (
@@ -528,7 +560,7 @@ function ExecutionBrief({
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: "1.5rem", fontWeight: 800, color, letterSpacing: "-0.04em",
             }}>
-              {cluster.confidence}%
+              {Math.round(cluster.confidence * 100)}%
             </div>
           </div>
         </div>
@@ -551,7 +583,7 @@ function ExecutionBrief({
           </div>
         )}
         <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${cluster.confidence}%`, background: color, borderRadius: 2 }} />
+          <div style={{ height: "100%", width: `${cluster.confidence * 100}%`, background: color, borderRadius: 2 }} />
         </div>
       </BriefSection>
 
@@ -593,6 +625,33 @@ function ExecutionBrief({
           ↗ View Full Brief
         </button>
       </BriefSection>
+
+      {/* 04 — Output */}
+      <BriefSection number="04" label="Output" accentColor="#6366f1">
+        <p style={{ margin: "0 0 8px", fontSize: "0.72rem", color: "var(--muted)", lineHeight: 1.55 }}>
+          Push this brief to your project management tool
+        </p>
+        <div style={{ display: "flex", gap: 6 }}>
+          <OutputButton
+            label="Notion"
+            icon="📝"
+            href="/connect?tab=outputs"
+            configured={!!outputConfig?.notion?.enabled}
+          />
+          <OutputButton
+            label="Jira"
+            icon="🎯"
+            href="/connect?tab=outputs"
+            configured={!!outputConfig?.jira?.enabled}
+          />
+          <OutputButton
+            label="Docs"
+            icon="📄"
+            href="/connect?tab=outputs"
+            configured={!!outputConfig?.google_docs?.enabled}
+          />
+        </div>
+      </BriefSection>
     </div>
   );
 }
@@ -609,7 +668,7 @@ function StatusStrip({
 }) {
   const criticalCount = clusters.filter((c) => severityLabel(c.severity) === "critical").length;
   const avgConf = clusters.length > 0
-    ? Math.round(clusters.reduce((sum, c) => sum + c.confidence, 0) / clusters.length)
+    ? Math.round(clusters.reduce((sum, c) => sum + c.confidence * 100, 0) / clusters.length)
     : 0;
 
   function timeAgo(d: Date): string {
@@ -745,15 +804,16 @@ export default function DashboardPage() {
     setAnalyzing(true);
     setUpgradeRequired(false);
     try {
+      // Trigger all 8 active ingest sources in parallel (each skips gracefully if not configured)
       await Promise.allSettled([
-        fetch("/api/ingest/slack",    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/email",    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/zendesk",  { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/intercom", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/jira",     { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/appstore", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/github",   { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/reddit",   { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+        fetch("/api/ingest/appstore",  { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+        fetch("/api/ingest/email",     { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+        fetch("/api/ingest/reddit",    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+        fetch("/api/ingest/zendesk",   { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+        fetch("/api/ingest/slack",     { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+        fetch("/api/ingest/intercom",  { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+        fetch("/api/ingest/jira",      { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+        fetch("/api/ingest/github",    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
       ]);
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
@@ -1095,6 +1155,7 @@ export default function DashboardPage() {
                         if (selectedCluster) setApprovals((a) => ({ ...a, [selectedCluster.id]: "rejected" }));
                       }}
                       onViewFull={() => setSnapshotOpen(true)}
+                      outputConfig={workspace?.output_config}
                     />
                   </div>
 

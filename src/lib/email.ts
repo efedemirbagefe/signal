@@ -13,11 +13,22 @@ export function createTransport() {
   });
 }
 
-export function buildEmailHTML(clusters: Cluster[]): string {
+export function buildEmailHTML(
+  clusters: Cluster[],
+  deliveryIds?: Record<string, string>
+): string {
   const rows = clusters
     .map((c) => {
       const color = c.severity >= 70 ? "#ff5c7a" : c.severity >= 40 ? "#ffd166" : "#46e6a6";
       const label = c.severity >= 70 ? "HIGH" : c.severity >= 40 ? "MEDIUM" : "LOW";
+      const deliveryId = deliveryIds?.[c.id];
+      const approveUrl = deliveryId
+        ? `${process.env.NEXTAUTH_URL}/api/respond?id=${deliveryId}&action=approve`
+        : null;
+      const rejectUrl = deliveryId
+        ? `${process.env.NEXTAUTH_URL}/api/respond?id=${deliveryId}&action=reject`
+        : null;
+
       return `
       <tr>
         <td style="padding:16px;border-bottom:1px solid rgba(255,255,255,0.08)">
@@ -33,8 +44,10 @@ export function buildEmailHTML(clusters: Cluster[]): string {
             <span>Slack: ${c.source_breakdown.slack} · Email: ${c.source_breakdown.email} · WA: ${c.source_breakdown.whatsapp}</span>
           </div>
           ${c.customer_quote ? `<blockquote style="border-left:3px solid #46e6a6;margin:12px 0 0;padding-left:12px;color:#9aa3b2;font-style:italic;font-size:13px">"${c.customer_quote}"</blockquote>` : ""}
-          <div style="margin-top:12px">
-            <a href="${process.env.NEXTAUTH_URL}/dashboard?gap=${c.id}" style="background:#46e6a6;color:#0b0c10;padding:6px 16px;border-radius:9999px;text-decoration:none;font-size:12px;font-weight:600">View Full Brief →</a>
+          <div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <a href="${process.env.NEXTAUTH_URL}/dashboard?gap=${c.id}" style="background:#46e6a6;color:#0b0c10;padding:7px 16px;border-radius:9999px;text-decoration:none;font-size:12px;font-weight:600">View Full Brief →</a>
+            ${approveUrl ? `<a href="${approveUrl}" style="background:rgba(70,230,166,0.12);color:#46e6a6;border:1px solid rgba(70,230,166,0.3);padding:7px 16px;border-radius:9999px;text-decoration:none;font-size:12px;font-weight:600">✅ Approve</a>` : ""}
+            ${rejectUrl ? `<a href="${rejectUrl}" style="background:rgba(255,92,122,0.12);color:#ff5c7a;border:1px solid rgba(255,92,122,0.3);padding:7px 16px;border-radius:9999px;text-decoration:none;font-size:12px;font-weight:600">❌ Reject</a>` : ""}
           </div>
         </td>
       </tr>`;
@@ -67,7 +80,7 @@ export function buildEmailHTML(clusters: Cluster[]): string {
         <!-- Footer -->
         <tr><td style="padding:32px 0 0;text-align:center">
           <p style="color:#9aa3b2;font-size:12px;margin:0">
-            Sent by Signal · <a href="${process.env.NEXTAUTH_URL}/settings/distribution" style="color:#46e6a6">Manage preferences</a>
+            Sent by Signal AI · <a href="${process.env.NEXTAUTH_URL}/settings/distribution" style="color:#46e6a6">Manage preferences</a>
           </p>
         </td></tr>
       </table>
@@ -77,9 +90,13 @@ export function buildEmailHTML(clusters: Cluster[]): string {
 </html>`;
 }
 
-export async function sendEmailBrief(recipients: string[], clusters: Cluster[]) {
+export async function sendEmailBrief(
+  recipients: string[],
+  clusters: Cluster[],
+  deliveryIds?: Record<string, string>
+) {
   const transport = createTransport();
-  const html = buildEmailHTML(clusters);
+  const html = buildEmailHTML(clusters, deliveryIds);
 
   await transport.sendMail({
     from: `Signal <${process.env.EMAIL_USER}>`,

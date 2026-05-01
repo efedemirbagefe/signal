@@ -5,7 +5,7 @@ import Link from "next/link";
 
 const sources = [
   "Zendesk", "Intercom", "GitHub", "App Store",
-  "Reddit", "Jira", "Slack", "Gmail", "WhatsApp",
+  "Reddit", "Jira", "Slack", "Gmail",
 ];
 
 const analysisLines = [
@@ -41,7 +41,7 @@ const gaps = [
 ];
 
 const proof = [
-  { n: "9",   label: "Signal sources" },
+  { n: "8",   label: "Signal sources" },
   { n: "<2m", label: "Time to first insight" },
   { n: "0",   label: "New packages to install" },
   { n: "∞",   label: "Gaps you'll never miss" },

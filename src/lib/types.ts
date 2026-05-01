@@ -1,7 +1,8 @@
 export type SignalSource =
   | "slack" | "email" | "whatsapp"
   | "zendesk" | "intercom" | "jira"
-  | "appstore" | "github" | "reddit";
+  | "appstore" | "googleplay" | "googleanalytics"
+  | "github" | "reddit";
 
 export type Severity = "high" | "medium" | "low";
 export type ClusterStatus = "active" | "reviewed" | "actioned" | "dismissed";
@@ -30,6 +31,8 @@ export interface SourceBreakdown {
   intercom: number;
   jira: number;
   appstore: number;
+  googleplay: number;
+  googleanalytics: number;
   github: number;
   reddit: number;
 }
@@ -123,6 +126,59 @@ export interface AppStoreConfig {
   last_sync: string | null;
 }
 
+export interface GooglePlayConfig {
+  enabled: boolean;
+  package_name: string;
+  service_account_key: string; // JSON string
+  max_rating: number; // 1-5, default 3
+  last_sync: string | null;
+}
+
+export interface GoogleAnalyticsConfig {
+  enabled: boolean;
+  property_id: string; // GA4 property ID e.g. "123456789"
+  service_account_email: string;
+  service_account_key: string; // JSON string
+  event_filter: string; // comma-sep event names, empty = all
+  last_sync: string | null;
+}
+
+// ─── Output Integrations ──────────────────────────────────────────────────────
+
+export interface NotionOutputConfig {
+  enabled: boolean;
+  api_key: string;
+  database_id: string;
+}
+
+export interface JiraOutputConfig {
+  enabled: boolean;
+  domain: string;
+  email: string;
+  api_token: string;
+  project_key: string;
+}
+
+export interface GoogleDocsOutputConfig {
+  enabled: boolean;
+  service_account_key: string;
+  folder_id: string;
+}
+
+export interface OutputConfig {
+  notion?: NotionOutputConfig;
+  jira?: JiraOutputConfig;
+  google_docs?: GoogleDocsOutputConfig;
+}
+
+// ─── Signal Thresholds ────────────────────────────────────────────────────────
+
+export interface ThresholdsConfig {
+  min_severity: number;   // 0-100, default 70 — clusters below this won't fire alerts
+  min_evidence: number;   // default 5 — min signals to form a cluster worth alerting
+  cooldown_hours: number; // 24 | 48 | 168 — don't re-alert same cluster within window
+}
+
 export interface GitHubConfig {
   enabled: boolean;
   token: string;
@@ -154,6 +210,8 @@ export interface IntegrationsConfig {
   intercom: IntercomConfig;
   jira: JiraConfig;
   appstore: AppStoreConfig;
+  googleplay: GooglePlayConfig;
+  googleanalytics: GoogleAnalyticsConfig;
   github: GitHubConfig;
   reddit: RedditConfig;
 }
@@ -185,6 +243,7 @@ export interface DistributionConfig {
     schedule: "instant" | "daily" | "weekly";
   };
   auto_distribute?: boolean;
+  thresholds?: ThresholdsConfig;
 }
 
 export interface Workspace {
@@ -199,6 +258,7 @@ export interface Workspace {
   whatsapp_config?: WhatsAppConfig;
   distribution_config?: DistributionConfig;
   integrations_config?: IntegrationsConfig;
+  output_config?: OutputConfig;
   created_at: string;
   // ─── Billing ───────────────────────────────────────────────────────────────
   plan?: "trial" | "pro" | "past_due" | "cancelled" | "expired";

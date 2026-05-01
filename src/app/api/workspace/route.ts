@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from("workspaces")
-    .select("id, name, slack_team_id, slack_monitored_channels, whatsapp_config, distribution_config, integrations_config")
+    .select("id, name, plan, trial_ends_at, analysis_count, analysis_count_reset_at, polar_status, polar_renews_at, slack_team_id, slack_monitored_channels, slack_token, slack_bot_token, gmail_token, whatsapp_config, distribution_config, integrations_config, output_config")
     .eq("id", workspaceId)
     .single();
 
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest) {
   const { updates } = await req.json();
 
   // Allowlist updatable fields to prevent overwriting user_id or id
-  const allowed = ["slack_monitored_channels", "distribution_config", "integrations_config"];
+  const allowed = ["slack_monitored_channels", "distribution_config", "integrations_config", "output_config", "name"];
   const safeUpdates = Object.fromEntries(
     Object.entries(updates ?? {}).filter(([k]) => allowed.includes(k))
   );

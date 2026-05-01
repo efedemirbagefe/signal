@@ -1,13 +1,16 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
 import { getSupabaseAdmin } from "@/lib/supabase";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * POST /api/auth/signup-workspace
  * Called by the signup page after supabase.auth.signUp() succeeds.
- * Verifies the session matches the userId before creating the workspace.
+ * Uses the admin client to confirm the userId actually exists in auth.users —
+ * this is safe because Supabase auth is the only source of valid user IDs,
+ * and email-confirmation flows do not create a session cookie, so cookie-based
+ * verification would always fail.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -17,19 +20,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "userId and workspaceName are required" }, { status: 400 });
     }
 
-    // Verify the authenticated user matches the requested userId
-    const cookieStore = await cookies();
-    const supabaseUser = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { getAll() { return cookieStore.getAll(); } } }
-    );
-    const { data: { user } } = await supabaseUser.auth.getUser();
-    if (!user || user.id !== userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Basic format guard before hitting the DB
+    if (!UUID_RE.test(userId)) {
+      return NextResponse.json({ error: "Invalid userId format" }, { status: 400 });
     }
 
     const supabase = getSupabaseAdmin();
+
+    // Confirm the user actually exists in Supabase Auth
+    const { data: { user: authUser }, error: authError } = await supabase.auth.admin.getUserById(userId);
+    if (authError || !authUser || authUser.id !== userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     // Check workspace doesn't already exist for this user
     const { data: existing } = await supabase

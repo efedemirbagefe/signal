@@ -30,8 +30,18 @@ Return ONLY a valid JSON array with no other text or markdown.`,
     ],
   });
 
-  const text = message.content[0].type === "text" ? message.content[0].text : "[]";
-  const parsed = JSON.parse(text) as AnalysisResult[];
+  const rawText = message.content[0].type === "text" ? message.content[0].text : "[]";
+
+  // Strip markdown code fences Claude sometimes wraps the JSON in
+  const text = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+
+  let parsed: AnalysisResult[];
+  try {
+    parsed = JSON.parse(text) as AnalysisResult[];
+  } catch (parseErr) {
+    console.error("[analyzeSignals] Failed to parse Claude response as JSON:", parseErr, "\nRaw response:", rawText);
+    throw new Error("AI returned an unexpected format — please try the analysis again.");
+  }
   return parsed;
 }
 
@@ -55,8 +65,13 @@ Return JSON with: problem_statement, recommended_solution, acceptance_criteria (
     ],
   });
 
-  const text = message.content[0].type === "text" ? message.content[0].text : "{}";
-  return JSON.parse(text);
+  const rawText = message.content[0].type === "text" ? message.content[0].text : "{}";
+  const text = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
 }
 
 export async function generateSlackBrief(cluster: import("./types").Cluster) {
